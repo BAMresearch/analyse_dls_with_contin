@@ -4,14 +4,17 @@
 from dlshelpers import getDLSgammaSi, getDLSFileMeta
 
 import os, shutil, subprocess
+import io
 import time
 import urllib
 import requests
+import itertools
 from pathlib import Path
 from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
 from jupyter_analysis_tools.utils import isWindows, isMac, pushd
+from dlshelpers import getDLSgammaSi
 
 def getContinForWindows(targetPath):
     binaryName = "contin-windows.exe"
@@ -186,3 +189,98 @@ def processFiles(fnLst, config, nthreads=None):
     print()
     print(f"CONTIN analysis with {nthreads} thread{'s' if nthreads > 1 else ''} took {time.time()-start:.1f}s.")
     return [rd for rd in resultDirs if rd is not None]
+
+def convertContinResultsToSizes(lines, df):
+    # user variables for environmental values as set by CNTb scripts
+    varmap = dict(temp="RUSER    18", angle="RUSER    17", visc="RUSER    19",
+                  refrac="RUSER    15", wavelen="RUSER    16")
+    indices = getLineNumber(lines, list(varmap.values()))
+    for name, idx in zip(varmap.keys(), indices):
+        varmap[name] = float(lines[idx].split()[-1])
+    # convert to SI units
+    varmap["visc"] *= 1e-3
+    varmap["wavelen"] *= 1e-9
+    gamma = getDLSgammaSi(varmap["angle"], varmap["refrac"], varmap["wavelen"], varmap["temp"], varmap["visc"])
+    # unclear if gamma needs doubled due to G2(t)-1 = g1(t)^2 = exp(-t*gamma)^2
+    df["abscissa"] *= gamma
+    df.rename(columns={'abscissa': 'radius', 'ordinate': 'distrib', 'error': 'err'},
+              inplace=True)
+    return df, varmap
+
+def getLineNumber(lines, phrases, debug=False):
+    """Returns the line numbers containing the provided phrases after searching
+    for the previous phrases sequentially. Search starts with the first phrase,
+    once it is found, search starts with the 2nd phrase from that line,
+    until the last phrase is found. Ignores early matches of the final phrase."""
+    nums = []
+    for i, line in enumerate(lines):
+        if phrases[len(nums)] in line:
+            if debug:
+                print("found '{}' on line {}.".format(phrases[len(nums)], i))
+            nums.append(i)
+            if len(phrases) == len(nums):
+                return nums
+    return nums
+
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return itertools.zip_longest(*args, fillvalue=fillvalue)
+
+def getContinInputCurve(inputAbsPath):
+    assert inputAbsPath.is_file()
+    # read in line by line, some adjustments required for parsing floats
+    startLine, count = 0, 0
+    with open(inputAbsPath) as fd:
+        startLine, count = [(idx, int(line.split()[-1]))
+                            for idx, line in enumerate(fd) if "NY" in line][0]
+    lines = []
+    with open(inputAbsPath) as fd:
+        lines = fd.readlines()
+    return [float(f) for line in lines[startLine+1:] for f in line.split()][count:]
+
+def getContinResults(sampleDir, continResultsFn, continInputFn, angle=None):
+    """*sampleDir*: A pathlib Path of the location where the CONTIN results can be found.
+    *continResultsFn*: File name of the ASCII file produced by CONTIN.
+    *continInputFn*: File name of the ASCII input file used for this CONTIN calculation."""
+    sampleDir = Path(sampleDir)
+    # check first if there was any CONTIN output generated
+    resultsFile = sampleDir / continResultsFn
+    if not resultsFile.is_file():
+        # try the subdir first
+        assert angle is not None, "An angle in degrees has to be provided"
+        resultsFile = sampleDir / getContinOutputDirname(float(angle)) / continResultsFn
+        if not resultsFile.is_file():
+            print("No distribution found in\n '{}'!".format(resultsFile.parent))
+            return None, None
+    # read in line by line, some adjustments required for parsing floats
+    lines = []
+    with open(resultsFile) as fd:
+        lines = fd.readlines()
+    # find the beginning and end of the fitted correlation curve
+    startLines = getLineNumber(lines, ["T            Y", "0PRECIS"])
+    if not len(startLines):
+        print(f"Fitted curve not found in CONTIN output!\n ({resultsFile})")
+        return None, None
+    dfStart, dfEnd = startLines[-2]+1, startLines[-1]
+    dfFit = pd.DataFrame([f for line in lines[dfStart:dfEnd] for f in grouper(line.split(), 2)],
+                         columns=('tau', 'corrFit'), dtype=float)
+    dfFit.corrFit = dfFit.corrFit**2 # to be compared with measured data
+    # get input correlation curve first, to be added to fitted correlation curve
+    dfFit['corrIn'] = getContinInputCurve(sampleDir/continInputFn)
+    # find the beginning and end of the distribution data
+    startLines = getLineNumber(lines, ["CHOSEN SOLUTION", "ORDINATE", "LINEAR COEFFICIENTS"])
+    if not len(startLines):
+        print(f"Distribution data not found in CONTIN output!\n ({resultsFile})")
+        return None, None
+    dfStart, dfEnd = startLines[-2]+1, startLines[-1]
+    lineEnd = lines[dfStart].index("X")
+    # convert CONTIN output distrib to parseable data for pandas
+    dfDistrib = pd.read_csv(io.StringIO("\n".join([line.replace("D", "E")[:lineEnd]
+                                for line in lines[dfStart:dfEnd]])),
+                            delim_whitespace=True, names=("ordinate", "error", "abscissa"))
+    #moments = ContinMoments.fromLines(tmpcLines, dfEnd+1)
+    #if len(moments) > 1:
+    #    del moments[-1] # ignore the moments of the entire distribution curve
+    #df, moments = convertContinResultsToSizes(tmpcLines, df, moments)
+    dfDistrib, varmap = convertContinResultsToSizes(lines, dfDistrib)
+    return dfDistrib, dfFit, varmap
