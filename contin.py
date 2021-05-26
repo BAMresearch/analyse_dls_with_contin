@@ -11,7 +11,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
-from .jupyter_analysis_tools.utils import isWindows, isMac, pushd
+from .jupyter_analysis_tools.utils import isWindows, isMac, pushd, grouper
 from .dlshelpers import getDLSgammaSi, getDLSFileMeta
 
 
