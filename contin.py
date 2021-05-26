@@ -224,10 +224,6 @@ def getLineNumber(lines, phrases, debug=False):
                 return nums
     return nums
 
-def grouper(iterable, n, fillvalue=None):
-    args = [iter(iterable)] * n
-    return itertools.zip_longest(*args, fillvalue=fillvalue)
-
 def getContinInputCurve(inputAbsPath):
     assert inputAbsPath.is_file()
     # read in line by line, some adjustments required for parsing floats
