@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # utils.py
 
-from dlshelpers import getDLSgammaSi, getDLSFileMeta
-
 import os, shutil, subprocess
 import io
 import time
@@ -13,8 +11,8 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
-from jupyter_analysis_tools.utils import isWindows, isMac, pushd
-from dlshelpers import getDLSgammaSi
+from .jupyter_analysis_tools.utils import isWindows, isMac, pushd
+from .dlshelpers import getDLSgammaSi, getDLSFileMeta
 
 def getContinForWindows(targetPath):
     binaryName = "contin-windows.exe"
