@@ -14,6 +14,10 @@ import numpy as np
 from .jupyter_analysis_tools.utils import isWindows, isMac, pushd
 from .dlshelpers import getDLSgammaSi, getDLSFileMeta
 
+
+InputFn = "contin_in.txt"
+OutputFn = "contin_out.txt"
+
 def getContinForWindows(targetPath):
     binaryName = "contin-windows.exe"
     baseurl="http://www.s-provencher.com"
@@ -156,8 +160,8 @@ def runContin(filenameAndConfigTuple, recalc=True):
             return tmpDir
         shutil.rmtree(tmpDir)
     os.mkdir(tmpDir)
-    continInDataPath  = tmpDir / continConfig['infn']
-    continOutDataPath = tmpDir / continConfig['outfn']
+    continInDataPath  = tmpDir / InputFn
+    continOutDataPath = tmpDir / OutputFn
     # Store input data
     with open(continInDataPath, 'wb') as fd:
         fd.write(continInData)
@@ -236,17 +240,15 @@ def getContinInputCurve(inputAbsPath):
         lines = fd.readlines()
     return [float(f) for line in lines[startLine+1:] for f in line.split()][count:]
 
-def getContinResults(sampleDir, continResultsFn, continInputFn, angle=None):
-    """*sampleDir*: A pathlib Path of the location where the CONTIN results can be found.
-    *continResultsFn*: File name of the ASCII file produced by CONTIN.
-    *continInputFn*: File name of the ASCII input file used for this CONTIN calculation."""
+def getContinResults(sampleDir, angle=None):
+    """*sampleDir*: A pathlib Path of the location where the CONTIN results can be found."""
     sampleDir = Path(sampleDir)
     # check first if there was any CONTIN output generated
-    resultsFile = sampleDir / continResultsFn
+    resultsFile = sampleDir / OutputFn
     if not resultsFile.is_file():
         # try the subdir first
         assert angle is not None, "An angle in degrees has to be provided"
-        resultsFile = sampleDir / getContinOutputDirname(float(angle)) / continResultsFn
+        resultsFile = sampleDir / getContinOutputDirname(float(angle)) / OutputFn
         if not resultsFile.is_file():
             print("No distribution found in\n '{}'!".format(resultsFile.parent))
             return None, None
@@ -264,7 +266,7 @@ def getContinResults(sampleDir, continResultsFn, continInputFn, angle=None):
                          columns=('tau', 'corrFit'), dtype=float)
     dfFit.corrFit = dfFit.corrFit**2 # to be compared with measured data
     # get input correlation curve first, to be added to fitted correlation curve
-    dfFit['corrIn'] = getContinInputCurve(sampleDir/continInputFn)
+    dfFit['corrIn'] = getContinInputCurve(sampleDir/InputFn)
     # find the beginning and end of the distribution data
     startLines = getLineNumber(lines, ["CHOSEN SOLUTION", "ORDINATE", "LINEAR COEFFICIENTS"])
     if not len(startLines):
