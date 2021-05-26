@@ -139,7 +139,7 @@ def genContinInput(filename, **continConfig):
 def getContinOutputDirname(angle):
     return f"contin_{angle:03.0f}"
 
-def runContin(filenameAndConfigTuple, recalc=True):
+def runContin(filenameAndConfigTuple):
     """Starts a single CONTIN process for the given DLS DataSet
     (which should contain a single angle only)."""
     continCmd = getContinPath()
@@ -156,7 +156,7 @@ def runContin(filenameAndConfigTuple, recalc=True):
     #ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") # timestamp
     tmpDir = workDir / (getContinOutputDirname(continConfig['angle'])+' '+filename.stem)
     if tmpDir.is_dir(): # deleting old results
-        if not recalc:
+        if not continConfig.get("recalc", True):
             return tmpDir
         shutil.rmtree(tmpDir)
     os.mkdir(tmpDir)
@@ -179,7 +179,7 @@ def runContin(filenameAndConfigTuple, recalc=True):
 def processFiles(fnLst, config, nthreads=None):
     start = time.time()
     if nthreads == 1:
-        resultDirs = [runContin((dn, config), recalc=True) for dn in fnLst]
+        resultDirs = [runContin((dn, config)) for dn in fnLst]
     else: # Using multiple CPU cores if available
         import multiprocessing
         if not nthreads:
