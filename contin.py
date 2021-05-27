@@ -11,7 +11,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
-from .jupyter_analysis_tools.utils import isWindows, isMac, pushd, grouper
+from .jupyter_analysis_tools.utils import isWindows, isMac, isList, pushd, grouper
 from .dlshelpers import getDLSgammaSi, getDLSFileData
 
 InputFn = "contin_in.txt"
@@ -166,16 +166,18 @@ def runContin(filenameAndConfigTuple):
         fd.write(proc.stdout)
     return tmpDir
 
-def processFiles(fnLst, config, nthreads=None):
+def runContinOverFiles(fnLst, config, nthreads=None):
     start = time.time()
+    if not isList(config):
+        config = (config,)
     if nthreads == 1:
-        resultDirs = [runContin((dn, config)) for dn in fnLst]
+        resultDirs = [runContin((dn, cfg)) for dn in fnLst for cfg in config]
     else: # Using multiple CPU cores if available
         import multiprocessing
         if not nthreads:
             nthreads = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes = nthreads)
-        resultDirs = pool.map(runContin, [(dn, config) for dn in fnLst])
+        resultDirs = pool.map(runContin, [(dn, cfg) for dn in fnLst for cfg in config])
         pool.close()
         pool.join()
     print()
