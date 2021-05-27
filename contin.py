@@ -12,8 +12,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
 from .jupyter_analysis_tools.utils import isWindows, isMac, pushd, grouper
-from .dlshelpers import getDLSgammaSi, getDLSFileMeta
-
+from .dlshelpers import getDLSgammaSi, getDLSFileData
 
 InputFn = "contin_in.txt"
 OutputFn = "contin_out.txt"
@@ -51,33 +50,23 @@ def genContinInput(filename, **continConfig):
     # transform data? Trd=0: no transform
     Trd = -1 # Trd=1: initial g(2), input sqrt[g(2)-1]; Trd=-1: initial g(2)-1, input sqrt[g(2)-1]
     # read the measurement settings (temperature, viscosity, refractive index and wavelength)
-    meta = getDLSFileMeta(filename)
+    data = getDLSFileData(filename)
     # select the measurement angle, make sure it's in the file
     angle = continConfig['angle']
-    anglesFromFile = [meta[key] for key in meta if key.startswith("Angle")]
-    assert angle in anglesFromFile, \
-        f"Given angle ({angle}) not found in file '{filename}': {anglesFromFile}"
+    assert angle in data.angles, \
+        f"Given angle ({angle}) not found in file '{filename}': {data.angles}"
     # get environment values for storage in contin file
-    temp    = meta['Temperature [K]']
-    visc    = meta['Viscosity [cp]']
-    refrac  = meta['Refractive Index']
-    wavelen = meta['Wavelength [nm]']
+    temp    = data['Temperature [K]']
+    visc    = data['Viscosity [cp]']
+    refrac  = data['Refractive Index']
+    wavelen = data['Wavelength [nm]']
     gamma = getDLSgammaSi(angle, refrac, wavelen*1e-9, temp, visc*1e-3)
     fitmin  = min(continConfig['fitRangeM'])/gamma
     fitmax  = max(continConfig['fitRangeM'])/gamma
-    name = "{} a{:03.0f}".format(meta['Samplename'], angle)
+    name = "{} a{:03.0f}".format(data['sampleName'], angle)
     Im, dIm = 1, 0
     # get measured correlation data and tau
-    dataStartEnd = 0, 0
-    with open(filename, encoding='cp1250') as fd:
-        content = fd.readlines()
-        dataStartEnd = [idx for idx, line in enumerate(content)
-                        if line.strip() in ('"Correlation"', '"Count Rate"')]
-        if len(dataStartEnd) == 1: # no end found in 'averaged' data files
-            dataStartEnd.append(len(content))
-    dlsData = pd.read_csv(filename, r'\s+', skiprows=dataStartEnd[0]+1,
-                       nrows=dataStartEnd[1]-dataStartEnd[0]-1, encoding='cp1250', 
-                       names=['tau']+anglesFromFile)
+    dlsData = data["correlation"]
     dlsData.tau *= 1e-3 # convert to seconds
     # restrict data to given range
     tmin, tmax = min(continConfig['ptRangeSec']), max(continConfig['ptRangeSec'])
