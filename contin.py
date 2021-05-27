@@ -53,8 +53,8 @@ def genContinInput(filename, **continConfig):
     data = getDLSFileData(filename)
     # select the measurement angle, make sure it's in the file
     angle = continConfig['angle']
-    assert angle in data.angles, \
-        f"Given angle ({angle}) not found in file '{filename}': {data.angles}"
+    assert angle in data['angles'], \
+        f"Given angle ({angle}) not found in file '{filename}': {data['angles']}"
     # get environment values for storage in contin file
     temp    = data['Temperature [K]']
     visc    = data['Viscosity [cp]']
