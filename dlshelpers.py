@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # utils.py
 
+import os
+from dateutil.parser import parse as parseDateTime
 import numpy as np
 import pandas as pd
 
@@ -31,3 +33,52 @@ def getDLSFileMeta(filenameOrBuffer):
         meta = {key: parseValue(value)
                 for (key, value) in meta.to_dict()['value'].items()}
         return meta
+
+def getDLSFileData(filename, showProgress=False):
+    if showProgress:
+        print('.', end="") # some progress output
+    data = dict(filename=os.path.basename(filename))
+    header = getDLSFileMeta(filename)
+    data.update(sampleName=header["Samplename"])
+    data.update(timestamp=parseDateTime(header['Date']+' '+header['Time']))
+    memostr = "".join([value for key,value in header.items() if key.startswith("SampMemo")])
+    # try to get the concentration from the memo field
+    #print("memostr", memostr)
+    memofields = [field.strip(' ,;') for field in memostr.split()]
+    #print("memofields", memofields)
+    try:
+        concentration = [float(field.split(':')[1]) for field in memofields if ':' in field][0]
+        concentration = 1/float(concentration)
+    except (IndexError, ValueError):
+        concentration = 1
+    data.update(concentration=concentration)
+    angles = [value for key,value in header.items() if key.startswith("Angle")]
+    data.update(angles=angles)
+    for name in "Temperature", "Viscosity", "Refractive Index", "Wavelength":
+        for key,value in header.items():
+            if key.startswith(name):
+                data[key] = value
+    with open(filename, encoding='cp1250') as fd:
+        lines = fd.readlines()
+        #[print(ln.strip()) for ln in lines[17:25]]
+        value = [line for line in lines if line.startswith('Monitor Diode')]
+        if len(value): # empty for '_averaged' files
+            value = float(value[0].split()[-1])
+            data.update(monitorDiode=value)
+        #print("data", data)
+        def findMatchingLine(lineLst, pattern):
+            idx = [idx for idx, ln in enumerate(lineLst) if pattern in ln]
+            return int(idx[0]) if len(idx) else len(lineLst)-1
+        corrstart = findMatchingLine(lines, 'Correlation')
+        crstart   = findMatchingLine(lines, 'Count Rate')
+        crend     = findMatchingLine(lines, 'Monitor Diode')
+    # read tabular data after file was closed by leaving scope of 'with'
+    if corrstart > 0:
+        corr = pd.read_csv(filename, skiprows=corrstart+1, nrows=crstart-1-corrstart,
+                           sep=r'\s+', names=["tau"]+angles, index_col=0)
+        data.update(correlation=corr)
+    if (crend-2-crstart) > 0:
+        cr   = pd.read_csv(filename, skiprows=crstart+1, nrows=crend-2-crstart,
+                           sep=r'\s+', names=["time"]+angles, index_col=0)
+        data.update(countrate=cr)
+    return data
