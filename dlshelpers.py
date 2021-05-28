@@ -54,6 +54,10 @@ def getDLSFileData(filename, showProgress=False):
     data.update(concentration=concentration)
     angles = [value for key,value in header.items() if key.startswith("Angle")]
     data.update(angles=angles)
+    # ATTENTION! MeanCR is stored in reversed order in these files for
+    # the acquisition software used here: "ALV MultiAngle" Version 3.1.4.3
+    meancr = np.flip(np.array([value for key,value in header.items() if key.startswith("MeanCR")]))
+    data.update(meancr=pd.DataFrame(meancr.reshape(1,-1), columns=angles))
     for name in "Temperature", "Viscosity", "Refractive Index", "Wavelength":
         for key,value in header.items():
             if key.startswith(name):
