@@ -266,9 +266,5 @@ def getContinResults(sampleDir, angle=None):
     dfDistrib = pd.read_csv(io.StringIO("\n".join([line.replace("D", "E")[:lineEnd]
                                 for line in lines[dfStart:dfEnd]])),
                             delim_whitespace=True, names=("ordinate", "error", "abscissa"))
-    #moments = ContinMoments.fromLines(tmpcLines, dfEnd+1)
-    #if len(moments) > 1:
-    #    del moments[-1] # ignore the moments of the entire distribution curve
-    #df, moments = convertContinResultsToSizes(tmpcLines, df, moments)
     dfDistrib, varmap = convertContinResultsToSizes(lines, dfDistrib)
     return dfDistrib, dfFit, varmap
