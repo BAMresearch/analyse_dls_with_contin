@@ -63,7 +63,6 @@ def genContinInput(filename, **continConfig):
     gamma = getDLSgammaSi(angle, refrac, wavelen*1e-9, temp, visc*1e-3)
     fitmin  = min(continConfig['fitRangeM'])/gamma
     fitmax  = max(continConfig['fitRangeM'])/gamma
-    name = "{} a{:03.0f}".format(data['sampleName'], angle)
     Im, dIm = 1, 0
     # get measured correlation data and tau
     dlsData = data["correlation"]
@@ -80,7 +79,7 @@ def genContinInput(filename, **continConfig):
     corStr  = np.array2string(corCropped.values, **a2s_kwargs)[1:-1]
     npts = len(tauCropped)
     # generate CONTIN input file
-    content = f"""{name}
+    content = f"""{filename.name}
  IFORMY    0    .00
  (6E13.7)
  IFORMT    0    .00
@@ -267,4 +266,7 @@ def getContinResults(sampleDir, angle=None):
                                 for line in lines[dfStart:dfEnd]])),
                             delim_whitespace=True, names=("ordinate", "error", "abscissa"))
     dfDistrib, varmap = convertContinResultsToSizes(lines, dfDistrib)
+    # parse original input data as well, if available
+    infn = sampleDir.parent / lines[0][52:].strip()
+    varmap['dataFilename'] = infn
     return dfDistrib, dfFit, varmap
