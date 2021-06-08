@@ -183,13 +183,18 @@ def runContinOverFiles(fnLst, config, nthreads=None):
     print(f"CONTIN analysis with {nthreads} thread{'s' if nthreads > 1 else ''} took {time.time()-start:.1f}s.")
     return [rd for rd in resultDirs if rd is not None]
 
+def getValueDictFromLines(lines, **kwargs):
+    """Searches the given list of lines for the keys in the provided dict and converts the values to float.
+    Returns the completed dict."""
+    indices = getLineNumber(lines, list(kwargs.values()))
+    for name, idx in zip(kwargs.keys(), indices):
+        kwargs[name] = float(lines[idx].split()[-1])
+    return kwargs
+
 def convertContinResultsToSizes(lines, df):
     # user variables for environmental values as set by CNTb scripts
-    varmap = dict(temp="RUSER    18", angle="RUSER    17", visc="RUSER    19",
-                  refrac="RUSER    15", wavelen="RUSER    16")
-    indices = getLineNumber(lines, list(varmap.values()))
-    for name, idx in zip(varmap.keys(), indices):
-        varmap[name] = float(lines[idx].split()[-1])
+    varmap = getValueDictFromLines(lines, temp="RUSER    18", angle="RUSER    17",
+                    visc="RUSER    19", refrac="RUSER    15", wavelen="RUSER    16")
     # convert to SI units
     varmap["visc"] *= 1e-3
     varmap["wavelen"] *= 1e-9
@@ -255,16 +260,18 @@ def getContinResults(sampleDir, angle=None):
     # get input correlation curve first, to be added to fitted correlation curve
     dfFit['corrIn'] = getContinInputCurve(sampleDir/InputFn)
     # find the beginning and end of the distribution data
-    startLines = getLineNumber(lines, ["CHOSEN SOLUTION", "ORDINATE", "LINEAR COEFFICIENTS"])
+    startLines = getLineNumber(lines, ["CHOSEN SOLUTION", "ORDINATE"])
     if not len(startLines):
         print(f"Distribution data not found in CONTIN output!\n ({resultsFile})")
         return None, None
-    dfStart, dfEnd = startLines[-2]+1, startLines[-1]
+    dfStart = startLines[1]+1
+    dfEnd = dfStart + int(getValueDictFromLines(lines, distribSize="NG        0").get('distribSize',0))
     lineEnd = 31
     # convert CONTIN output distrib to parseable data for pandas
-    dfDistrib = pd.read_csv(io.StringIO("\n".join([line[:lineEnd].replace("D", "E")
-                                for line in lines[dfStart:dfEnd]])),
-                            delim_whitespace=True, names=("ordinate", "error", "abscissa"))
+    fixedFloatFmt = io.StringIO("\n".join([line[:lineEnd].replace("D", "E")
+                                for line in lines[dfStart:dfEnd]]))
+    dfDistrib = pd.read_csv(fixedFloatFmt, delim_whitespace=True,
+                            names=("ordinate", "error", "abscissa"))
     dfDistrib, varmap = convertContinResultsToSizes(lines, dfDistrib)
     # parse original input data as well, if available
     infn = sampleDir.parent / lines[0][52:].strip()
