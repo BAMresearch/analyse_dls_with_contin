@@ -260,9 +260,9 @@ def getContinResults(sampleDir, angle=None):
         print(f"Distribution data not found in CONTIN output!\n ({resultsFile})")
         return None, None
     dfStart, dfEnd = startLines[-2]+1, startLines[-1]
-    lineEnd = lines[dfStart].index("X")
+    lineEnd = 31
     # convert CONTIN output distrib to parseable data for pandas
-    dfDistrib = pd.read_csv(io.StringIO("\n".join([line.replace("D", "E")[:lineEnd]
+    dfDistrib = pd.read_csv(io.StringIO("\n".join([line[:lineEnd].replace("D", "E")
                                 for line in lines[dfStart:dfEnd]])),
                             delim_whitespace=True, names=("ordinate", "error", "abscissa"))
     dfDistrib, varmap = convertContinResultsToSizes(lines, dfDistrib)
