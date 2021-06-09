@@ -106,7 +106,7 @@ def genContinInput(filename, **continConfig):
  GMNMX     2    {fitmax:.3E}
  RUSER    10    {Trd:.2f}
  NG        0    {{gridpts:.2f}}
- NLINF     0    {{freeBaseline:.2f}}
+ NLINF     0    {{baselineCoeffs:.2f}}
  IUSER    10    4.00
  RUSER    21    1.0
  RUSER    22   -1.0
