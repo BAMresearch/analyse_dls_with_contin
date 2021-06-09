@@ -264,14 +264,20 @@ def getContinResults(sampleDir, angle=None):
     if not len(startLines):
         print(f"Distribution data not found in CONTIN output!\n ({resultsFile})")
         return None, None
+    gridSize = int(getValueDictFromLines(lines, distribSize="NG        0").get('distribSize',0))
     dfStart = startLines[1]+1
-    dfEnd = dfStart + int(getValueDictFromLines(lines, distribSize="NG        0").get('distribSize',0))
-    lineEnd = 31
+    lineEnd = 31 # do not parse floats beyond this column
     # convert CONTIN output distrib to parseable data for pandas
     fixedFloatFmt = io.StringIO("\n".join([line[:lineEnd].replace("D", "E")
-                                for line in lines[dfStart:dfEnd]]))
+                                for line in lines[dfStart:dfStart+gridSize]]))
     dfDistrib = pd.read_csv(fixedFloatFmt, delim_whitespace=True,
                             names=("ordinate", "error", "abscissa"))
+    # update x/abscissa values to avoid duplicates due to low precision in final solution output
+    startLines = getLineNumber(lines, ["GRID POINT"])
+    if len(startLines):
+        dfStart = startLines[0]+1
+        abscissa = np.fromiter([line.split()[0] for line in lines[dfStart:dfStart+gridSize]], float)
+        dfDistrib.abscissa = abscissa
     dfDistrib, varmap = convertContinResultsToSizes(lines, dfDistrib)
     # parse original input data as well, if available
     infn = sampleDir.parent / lines[0][52:].strip()
