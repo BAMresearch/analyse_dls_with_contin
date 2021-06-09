@@ -97,6 +97,7 @@ def genContinInput(filename, **continConfig):
  IPRINT    2    2.00
  IPLFIT    1    0.00
  IPLFIT    2    0.00
+ LINEPG    0   50.
  NONNEG    1    1.00
  IWT       0    {IWT:.2f}
  NQPROG    1    5.00
