@@ -2,6 +2,7 @@
 # utils.py
 
 import os
+from pathlib import Path
 from dateutil.parser import parse as parseDateTime
 import numpy as np
 import pandas as pd
@@ -37,8 +38,8 @@ def getDLSFileMeta(filenameOrBuffer):
 def getDLSFileData(filename, showProgress=False):
     if showProgress:
         print('.', end="") # some progress output
-    data = dict(filename=os.path.basename(filename))
-    header = getDLSFileMeta(filename)
+    data = dict(filename=Path(filename).resolve())
+    header = getDLSFileMeta(str(filename))
     data.update(sampleName=header["Samplename"])
     data.update(timestamp=parseDateTime(header['Date']+' '+header['Time']))
     memostr = "".join([value for key,value in header.items() if key.startswith("SampMemo")])
