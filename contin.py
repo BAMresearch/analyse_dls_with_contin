@@ -65,8 +65,7 @@ def genContinInput(filename, **continConfig):
     fitmax  = max(continConfig['fitRangeM'])/gamma
     Im, dIm = 1, 0
     # get measured correlation data and tau
-    dlsData = data["correlation"]
-    dlsData.reset_index(inplace=True)
+    dlsData = filedata["correlation"].reset_index()
     dlsData.tau *= 1e-3 # convert to seconds
     # restrict data to given range
     tmin, tmax = min(continConfig['ptRangeSec']), max(continConfig['ptRangeSec'])
