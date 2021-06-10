@@ -11,7 +11,8 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
-from .jupyter_analysis_tools.utils import isWindows, isMac, isList, pushd, grouper
+from .jupyter_analysis_tools.utils import isWindows, isMac, isList, pushd, grouper, updatedDict
+from .jupyter_analysis_tools.analysis import getModZScore
 from .dlshelpers import getDLSgammaSi, getDLSFileData
 
 InputFn = "contin_in.txt"
@@ -45,21 +46,20 @@ def getContinPath():
             print("Failed to retrieve CONTIN executable!")
     raise NotImplementedError("Don't know how to retrieve the CONTIN executable!")
 
-def genContinInput(filename, **continConfig):
+def genContinInput(filedata, **continConfig):
+    """Expects a dictionary of file data created by getDLSFileData()."""
     IWT = 5 if continConfig['weighResiduals'] else 1
     # transform data? Trd=0: no transform
     Trd = -1 # Trd=1: initial g(2), input sqrt[g(2)-1]; Trd=-1: initial g(2)-1, input sqrt[g(2)-1]
-    # read the measurement settings (temperature, viscosity, refractive index and wavelength)
-    data = getDLSFileData(filename)
     # select the measurement angle, make sure it's in the file
     angle = continConfig['angle']
-    assert angle in data['angles'], \
-        f"Given angle ({angle}) not found in file '{filename}': {data['angles']}"
+    assert angle in filedata['angles'], \
+        f"Given angle ({angle}) not found in file '{filedata['filename']}': {filedata['angles']}"
     # get environment values for storage in contin file
-    temp    = data['Temperature [K]']
-    visc    = data['Viscosity [cp]']
-    refrac  = data['Refractive Index']
-    wavelen = data['Wavelength [nm]']
+    temp    = filedata['Temperature [K]']
+    visc    = filedata['Viscosity [cp]']
+    refrac  = filedata['Refractive Index']
+    wavelen = filedata['Wavelength [nm]']
     gamma = getDLSgammaSi(angle, refrac, wavelen*1e-9, temp, visc*1e-3)
     fitmin  = min(continConfig['fitRangeM'])/gamma
     fitmax  = max(continConfig['fitRangeM'])/gamma
@@ -78,7 +78,7 @@ def genContinInput(filename, **continConfig):
     corStr  = np.array2string(corCropped.values, **a2s_kwargs)[1:-1]
     npts = len(tauCropped)
     # generate CONTIN input file
-    content = f"""{filename.name}
+    content = f"""{filedata['filename'].name}
  IFORMY    0    .00
  (6E13.7)
  IFORMT    0    .00
@@ -107,6 +107,7 @@ def genContinInput(filename, **continConfig):
  NG        0    {{gridpts:.2f}}
  NLINF     0    {{baselineCoeffs:.2f}}
  IUSER    10    4.00
+ RUSER    11    {filedata['score'][angle]:.3E}
  RUSER    21    1.0
  RUSER    22   -1.0
  RUSER    23    0.0
@@ -128,22 +129,21 @@ def genContinInput(filename, **continConfig):
 def getContinOutputDirname(angle):
     return f"contin_{angle:03.0f}"
 
-def runContin(filenameAndConfigTuple):
+def runContin(filedataAndConfigTuple):
     """Starts a single CONTIN process for the given DLS DataSet
     (which should contain a single angle only)."""
     continCmd = getContinPath()
     assert continCmd.is_file(), "CONTIN executable not found!"
-    filename, continConfig = filenameAndConfigTuple
-    filename = Path(filename)
+    filedata, continConfig = filedataAndConfigTuple
     try:
-        continInData = genContinInput(filename, **continConfig)
+        continInData = genContinInput(filedata, **continConfig)
     except AssertionError:
         print(f"Scattering angle {continConfig['angle']} not found!\n"
-              f"    Skipping '{filename.name}'.")
+              f"    Skipping '{filedata['filename'].name}'.")
         return
-    workDir = filename.parent
+    workDir = filedata['filename'].parent
     #ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") # timestamp
-    tmpDir = workDir / (getContinOutputDirname(continConfig['angle'])+' '+filename.stem)
+    tmpDir = workDir / (getContinOutputDirname(continConfig['angle'])+' '+filedata['filename'].stem)
     if tmpDir.is_dir(): # deleting old results
         if not continConfig.get("recalc", True):
             return tmpDir
@@ -165,18 +165,37 @@ def runContin(filenameAndConfigTuple):
         fd.write(proc.stdout)
     return tmpDir
 
-def runContinOverFiles(fnLst, config, nthreads=None):
+def readData(fnLst, configLst):
+    angles = [cfg['angle'] for cfg in configLst]
+    dataLst = [getDLSFileData(fn) for fn in fnLst]
+    # calc modified Z-Score based on median absolute deviation
+    # for each count rate at the same angle
+    for angle in set(angles):
+        idx, cr = zip(*((i, filedata['countrate'][angle].values)
+             for i, filedata in enumerate(dataLst)
+                 if angle in filedata['countrate']))
+        #print(angle, idx, getModZScore(np.stack(cr)))
+        for i, score in zip(idx, getModZScore(np.stack(cr))):
+            if 'score' not in dataLst[i]:
+                dataLst[i]['score'] = dict()
+            dataLst[i]['score'][angle] = score
+    return dataLst
+
+def runContinOverFiles(fnLst, configLst, nthreads=None):
     start = time.time()
-    if not isList(config):
-        config = (config,)
+    if not isList(configLst):
+        configLst = (configLst,)
+    dataLst = readData(fnLst, configLst)
+    # get all combinations of CONTIN parameters and data files
+    dataNConfig = [(dn, cfg) for dn in dataLst for cfg in configLst]
     if nthreads == 1:
-        resultDirs = [runContin((dn, cfg)) for dn in fnLst for cfg in config]
+        resultDirs = [runContin(dc) for dc in dataNConfig]
     else: # Using multiple CPU cores if available
         import multiprocessing
         if not nthreads:
             nthreads = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes = nthreads)
-        resultDirs = pool.map(runContin, [(dn, cfg) for dn in fnLst for cfg in config])
+        resultDirs = pool.map(runContin, dataNConfig)
         pool.close()
         pool.join()
     print()
@@ -186,15 +205,18 @@ def runContinOverFiles(fnLst, config, nthreads=None):
 def getValueDictFromLines(lines, **kwargs):
     """Searches the given list of lines for the keys in the provided dict and converts the values to float.
     Returns the completed dict."""
-    indices = getLineNumber(lines, list(kwargs.values()))
-    for name, idx in zip(kwargs.keys(), indices):
-        kwargs[name] = float(lines[idx].split()[-1])
-    return kwargs
+    for li, line in enumerate(lines):
+        if "FINAL VALUES OF CONTROL VARIABLES" in line:
+            end = li
+            break
+    return {key: float(line.split()[-1])
+            for line in lines[8:end] for key, pattern in kwargs.items() if pattern in line}
 
 def convertContinResultsToSizes(lines, df):
     # user variables for environmental values as set by CNTb scripts
-    varmap = getValueDictFromLines(lines, temp="RUSER    18", angle="RUSER    17",
-                    visc="RUSER    19", refrac="RUSER    15", wavelen="RUSER    16")
+    varmap = getValueDictFromLines(lines,
+                temp="RUSER    18", angle="RUSER    17", visc="RUSER    19",
+                refrac="RUSER    15", wavelen="RUSER    16", score="RUSER    11")
     # convert to SI units
     varmap["visc"] *= 1e-3
     varmap["wavelen"] *= 1e-9
