@@ -77,6 +77,8 @@ def genContinInput(filedata, **continConfig):
     tauStr  = np.array2string(tauCropped.values, **a2s_kwargs)[1:-1]
     corStr  = np.array2string(corCropped.values, **a2s_kwargs)[1:-1]
     npts = len(tauCropped)
+    # store the score for this data if it was determined
+    scoreRecord = f"\n RUSER    11    {filedata['score'][angle]:.3E}" if 'score' in filedata else ""
     # generate CONTIN input file
     content = f"""{filedata['filename'].name}
  IFORMY    0    .00
@@ -106,8 +108,7 @@ def genContinInput(filedata, **continConfig):
  RUSER    10    {Trd:.2f}
  NG        0    {{gridpts:.2f}}
  NLINF     0    {{baselineCoeffs:.2f}}
- IUSER    10    4.00
- RUSER    11    {filedata['score'][angle]:.3E}
+ IUSER    10    4.00{scoreRecord}
  RUSER    21    1.0
  RUSER    22   -1.0
  RUSER    23    0.0
@@ -171,9 +172,12 @@ def readData(fnLst, configLst):
     # calc modified Z-Score based on median absolute deviation
     # for each count rate at the same angle
     for angle in set(angles):
-        idx, cr = zip(*((i, filedata['countrate'][angle].values)
-             for i, filedata in enumerate(dataLst)
-                 if angle in filedata['countrate']))
+        try:
+            idx, cr = zip(*((i, filedata['countrate'][angle].values)
+                             for i, filedata in enumerate(dataLst)
+                                 if angle in filedata['countrate']))
+        except (ValueError, KeyError): # filedata without 'countrate', most probably
+            continue
         #print(angle, idx, getModZScore(np.stack(cr)))
         for i, score in zip(idx, getModZScore(np.stack(cr))):
             if 'score' not in dataLst[i]:
