@@ -26,16 +26,16 @@ def parseValue(val):
             pass
         return val
 
-def getDLSFileMeta(filenameOrBuffer):
+def getDLSFileMeta(filenameOrBuffer, encoding='cp1250'):
         # read the measurement settings (temperature, viscosity, refractive index and wavelength)
         # only for 'ALV-7004 CGS-8F Data' data files
-        meta = pd.read_csv(filenameOrBuffer, r'\s*:\s+', skiprows=1, nrows=36, encoding='cp1250',
+        meta = pd.read_csv(filenameOrBuffer, sep=r'\s*:\s+', skiprows=1, nrows=36, encoding=encoding,
                            names=['name', 'value'], index_col='name', engine='python')
         meta = {key: parseValue(value)
                 for (key, value) in meta.to_dict()['value'].items()}
         return meta
 
-def getDLSFileData(filename, showProgress=False):
+def getDLSFileData(filename, showProgress=False, encoding='cp1250'):
     if showProgress:
         print('.', end="") # some progress output
     data = dict(filename=Path(filename).resolve())
@@ -80,10 +80,10 @@ def getDLSFileData(filename, showProgress=False):
     # read tabular data after file was closed by leaving scope of 'with'
     if corrstart > 0:
         corr = pd.read_csv(filename, skiprows=corrstart+1, nrows=crstart-1-corrstart,
-                           sep=r'\s+', names=["tau"]+angles, index_col=0)
+                           sep=r'\s+', names=["tau"]+angles, index_col=0, encoding=encoding)
         data.update(correlation=corr)
     if (crend-2-crstart) > 0:
         cr   = pd.read_csv(filename, skiprows=crstart+1, nrows=crend-2-crstart,
-                           sep=r'\s+', names=["time"]+angles, index_col=0)
+                           sep=r'\s+', names=["time"]+angles, index_col=0, encoding=encoding)
         data.update(countrate=cr)
     return data
