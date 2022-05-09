@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ibressler/sphinx-action@testpdf
+      - uses: ibressler/sphinx-action@master
         with:
           pre-build-command: "pip install numpy pandas"
           # && apt-get update -y && apt-get install -y latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended"
