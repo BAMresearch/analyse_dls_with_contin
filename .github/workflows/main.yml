@@ -22,7 +22,7 @@ jobs:
       - uses: ibressler/sphinx-action@test
         with:
           pre-build-command: "pip install numpy pandas"
-          build-command: "make html"
+          build-command: "make html latexpdf"
           docs-folder: "doc"
 
       - name: Check for output
