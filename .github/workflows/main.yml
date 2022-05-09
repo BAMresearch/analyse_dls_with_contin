@@ -19,9 +19,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ibressler/sphinx-action@master
+      - uses: ibressler/sphinx-action@test
         with:
-          pre-build-command: "apt-get update -y && apt-get install -y python3-pandas python3-numpy python3-dateutil latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended"
+          pre-build-command: "apt-get update -y && apt-get install -y python3-pandas python3-numpy"
           build-command: "make html"
           docs-folder: "doc"
 #      - name: Install LaTeX packages
