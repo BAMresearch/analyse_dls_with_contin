@@ -24,6 +24,9 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y python3-pandas python3-numpy python3-dateutil python3-sphinx latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended 
 
+      - name: debugging sphinx
+        run: which sphinx-build && sphinx-build --version
+
       - name: Building the document
         run: |
           cd doc
