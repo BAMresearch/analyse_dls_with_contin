@@ -28,8 +28,7 @@ jobs:
       - name: Check for output
         run: ls -Rla doc/build/
 
-      # Publish built docs to gh-pages branch.
-      - name: Commit documentation changes
+      - name: Commit documentation changes to gh-pages branch
         run: |
           git clone https://github.com/BAMresearch/analyse_dls_with_contin.git --branch gh-pages --single-branch gh-pages
           cp -R doc/build/html/* gh-pages/
@@ -41,6 +40,13 @@ jobs:
           git commit -m "Updated documentation" -a || true
           # The above command will fail if no changes were present, so we ignore
           # that.
+
+      - name: Push changes back to repo (gh-pages branch)
+        uses: ad-m/github-push-action@master
+        with:
+          branch: gh-pages
+#          directory: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
 #      - name: Install LaTeX packages
 #        run: |
