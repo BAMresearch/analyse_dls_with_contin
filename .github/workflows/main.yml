@@ -24,6 +24,10 @@ jobs:
           pre-build-command: "pip install numpy pandas"
           build-command: "make html"
           docs-folder: "doc"
+
+      - name: Check for output
+        run: ls -Rla doc/build/
+
 #      - name: Install LaTeX packages
 #        run: |
 #          sudo apt-get update -y
