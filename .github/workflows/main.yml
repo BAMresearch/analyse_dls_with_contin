@@ -28,6 +28,12 @@ jobs:
       - name: Check for output
         run: ls -Rla doc/build/
 
+      # Create an artifact of the html output.
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Docs-HTML
+          path: doc/build/html/
+
 #      - name: Install LaTeX packages
 #        run: |
 #          sudo apt-get update -y
