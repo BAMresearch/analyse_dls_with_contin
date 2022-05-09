@@ -19,15 +19,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install LaTeX packages
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y python3-pandas python3-numpy python3-dateutil python3-sphinx latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended 
-
-      - name: debugging sphinx
-        run: which sphinx-build && sphinx-build --version
-
-      - name: Building the document
-        run: |
-          cd doc
-          make html
+    - uses: ibressler/sphinx-action
+      with:
+#        pre-build-command: "apt-get update -y && apt-get install -y latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended"
+        build-command: "make html"
+        docs-folder: "doc"
+#      - name: Install LaTeX packages
+#        run: |
+#          sudo apt-get update -y
+#          sudo apt-get install -y python3-pandas python3-numpy python3-dateutil python3-sphinx latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended 
+#
+#      - name: debugging sphinx
+#        run: which sphinx-build && sphinx-build --version
+#
+#      - name: Building the document
+#        run: |
+#          cd doc
+#          make html
