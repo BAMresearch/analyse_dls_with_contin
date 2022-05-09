@@ -128,6 +128,7 @@ def getAttenuationFromMemo(memo, count=4, detectorKey='detektor', levelKey='stuf
     [0.1, 0.3, 1.0, 1.0]
 
     Table of transmission levels 1-4 (columns) as defined in the program for detectors 1-4 (rows):
+
     >>> print(transmissionLevels)
     [[1.   0.1  0.03 0.01]
      [1.   0.3  0.1  0.03]
