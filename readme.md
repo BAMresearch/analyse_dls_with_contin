@@ -7,3 +7,7 @@ The expected input file format is `ALV-7004 CGS-8F Data` which is found at the f
 ### Documentation of some parts:
 
 https://bamresearch.github.io/analyse_dls_with_contin
+
+### Also as PDF:
+
+https://bamresearch.github.io/analyse_dls_with_contin/analyse-dls-with-contin.pdf
