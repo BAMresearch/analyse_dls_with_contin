@@ -22,7 +22,7 @@ jobs:
       - name: Install LaTeX packages
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y python3-sphinx latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended 
+          sudo apt-get install -y python3-dateutil python3-sphinx latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended 
 
       - name: Building the document
         run: |
