@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ibressler/sphinx-action@test
+      - uses: ibressler/sphinx-action@master
         with:
           pre-build-command: "pip install numpy pandas && apt-get update -y && apt-get install -y latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended"
           build-command: "make html latexpdf"
@@ -32,6 +32,7 @@ jobs:
         run: |
           git clone https://github.com/BAMresearch/analyse_dls_with_contin.git --branch gh-pages --single-branch gh-pages
           cp -R doc/build/html/* gh-pages/
+          cp doc/build/latex/analyse-dls-with-contin.pdf gh-pages/
           cd gh-pages
           touch .nojekyll
           git config --local user.email "action@github.com"
