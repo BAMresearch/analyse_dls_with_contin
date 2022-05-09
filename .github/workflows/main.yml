@@ -21,7 +21,8 @@ jobs:
 
       - uses: ibressler/sphinx-action@testpdf
         with:
-          pre-build-command: "pip install numpy pandas && apt-get update -y && apt-get install -y latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended"
+          pre-build-command: "pip install numpy pandas"
+          # && apt-get update -y && apt-get install -y latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended"
           build-command: "make html latexpdf"
           docs-folder: "doc"
 
