@@ -1,1 +1,85 @@
-My GitHub Page
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Welcome to Analyse-DLS-with-CONTIN’s documentation! &#8212; Analyse-DLS-with-CONTIN  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/haiku.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="#">
+          <span>Analyse-DLS-with-CONTIN  documentation</span></a></h1>
+        <h2 class="heading"><span>Welcome to Analyse-DLS-with-CONTIN’s documentation!</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        <a class="uplink" href="#">Contents</a>
+        </p>
+
+      </div>
+      <div class="content" role="main">
+        
+        
+  <section id="welcome-to-analyse-dls-with-contin-s-documentation">
+<h1>Welcome to Analyse-DLS-with-CONTIN’s documentation!<a class="headerlink" href="#welcome-to-analyse-dls-with-contin-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="attenuation-specified-in-sample-description">
+<h1>Attenuation specified in sample description<a class="headerlink" href="#attenuation-specified-in-sample-description" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">dlshelpers.</span></span><span class="sig-name descname"><span class="pre">getAttenuationFromMemo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detectorKey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'detektor'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">levelKey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stufe'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p>Extract manually specified attenuation of individual scattering angles from a given
+measurement data files (ASC) <em>SampMemo</em> field.
+Different notations and numbers of detectors are accepted (test cases):</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;Toluolmessung für Statik,, Detektor 1 und 2, 1 Stufe abgeschwächt&quot;</span><span class="p">)</span>
+<span class="go">[0.1, 0.3, 1.0, 1.0]</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;Toluolmessung für Statik,, Detektor 1 und 2, 1 Stufe abgeschwächt, Detektor 3 , 2 Stufen abgeschwächt&quot;</span><span class="p">)</span>
+<span class="go">[0.1, 0.3, 0.1, 1.0]</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;Toluolmessung für Statik,, Detektor 1 und 2, 1 Stufe abgeschwächt, Detektor 3 und 4, 2 Stufen abgeschwächt&quot;</span><span class="p">)</span>
+<span class="go">[0.1, 0.3, 0.1, 0.1]</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;Toluolmessung für Statik,, Detektor 1, 1 Stufe abgeschwächt, Detektor 3 , 2 Stufen abgeschwächt&quot;</span><span class="p">)</span>
+<span class="go">[0.1, 1.0, 0.1, 1.0]</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;1:100 verdünnt mit Wasser, ungefiltert,, Detektor 1(10%) und 2(30%), 1 Stufe abgeschwächt&quot;</span><span class="p">)</span>
+<span class="go">[0.1, 0.3, 1.0, 1.0]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        <a class="uplink" href="#">Contents</a>
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Ingo Breßler.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 4.5.0.
+    </div>
+  </body>
+</html>
