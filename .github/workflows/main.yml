@@ -14,10 +14,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-      
-      # Standard drop-in approach that should work for most people.
-      - uses: ammaraskar/sphinx-action@master
+      - name: Check out the code
+        uses: actions/checkout@v3
         with:
-          #pre-build-command: "apt-get update -y && apt-get install -y python3-dateutil latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended"
-          docs-folder: "doc"
+          fetch-depth: 0
+
+      - name: Install LaTeX packages
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y python3-sphinx latexmk texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended 
+
+      - name: Building the document
+        run: |
+          cd doc
+          make html
