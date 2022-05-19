@@ -32,10 +32,18 @@ def parseValue(val):
 def getDLSFileMeta(filenameOrBuffer, encoding='cp1250'):
         # read the measurement settings (temperature, viscosity, refractive index and wavelength)
         # only for 'ALV-7004 CGS-8F Data' data files
-        meta = pd.read_csv(filenameOrBuffer, sep=r'\s*:\s+', skiprows=1, nrows=39, encoding=encoding,
-                           names=['name', 'value'], index_col='name', engine='python')
-        meta = {key: parseValue(value)
-                for (key, value) in meta.to_dict()['value'].items()}
+        meta = pd.read_csv(filenameOrBuffer, sep=':', skiprows=1, nrows=39, encoding=encoding,
+                           index_col=0,
+                           names=range(5), # also read fields containing two colons
+                           na_filter=False, # don't replace empty fields with NaN
+                           header=None,
+                           #quotechar='"',
+                           escapechar="\t", # filters any TAB whitespace
+                           skipinitialspace=True # strips whitespace from fields outside of quotes
+                          )
+        meta = {name.strip(): parseValue(':'.join(field for field in meta.T[name]
+                                                  if len(field)).strip())
+                for name in meta.index}
         return meta
 
 from warnings import warn
@@ -45,7 +53,6 @@ def getDLSFileData(filename, showProgress=False, encoding='cp1250',
         print('.', end="") # some progress output
     data = dict(filename=Path(filename).resolve())
     header = getDLSFileMeta(str(filename))
-    #print(header)
     data.update(sampleName=header["Samplename"])
     data.update(timestamp=parseDateTime(header['Date']+' '+header['Time']))
     # parsing the scattering angles
