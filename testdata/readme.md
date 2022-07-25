@@ -12,7 +12,7 @@ The main environmental conditions of each measurement are stored in each data fi
   https://en.wikipedia.org/wiki/Water
 - Toluene, used for calibrating the instrument  
   https://en.wikipedia.org/wiki/Toluene
-- MW002-03: Polypropylene particles in water with a radius of approximately 64 nm. These particles were synthesized according to <source?>.  
+- MW002-03: Polypropylene particles in water with a radius of approximately 64 nm.  
   Cumulant analysis according to ISO 13321 gave:
   ```
   Mean hydrodynamic radius             <Rh>     = 63.982 +/- 2.003 nm 
@@ -32,7 +32,7 @@ The main environmental conditions of each measurement are stored in each data fi
                            Rh(D_0) = 61.524 +/- 0.692 nm 
   ```
 ## Intended use
-The main purposes of this data are functional and regression tests, respectively reading the data format correctly and reproducing analysis results during iterative software development steps.
+The main purposes of this data are functional and regression tests of the analysis Python code, respectively reading the data format correctly and reproducing analysis results during iterative software development steps consistently.
 
 ### Disclaimer
 The data are not meant to verify the analysis algorithms (and results) for correctness since the materials measured here are **no** certified reference materials.
