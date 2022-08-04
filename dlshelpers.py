@@ -2,6 +2,7 @@
 # utils.py
 
 import os, re
+from warnings import warn
 from pathlib import Path
 from dateutil.parser import parse as parseDateTime
 import numpy as np
@@ -46,7 +47,6 @@ def getDLSFileMeta(filenameOrBuffer, encoding='cp1250'):
                 for name in meta.index}
         return meta
 
-from warnings import warn
 def getDLSFileData(filename, showProgress=False, encoding='cp1250',
                    attenKeys={'key': 'abgeschwächt', 'detectorKey': 'detektor', 'levelKey': 'stufe'}):
     if showProgress:
