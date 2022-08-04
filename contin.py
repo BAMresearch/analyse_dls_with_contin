@@ -130,17 +130,27 @@ def genContinInput(filedata, **continConfig):
 def getContinOutputDirname(angle):
     return f"contin_{angle:03.0f}"
 
-def runContin(filedataAndConfigTuple):
+def workerInit(_queue):
+    """Initializes a queue for log messages in each worker process during multiprocessing.
+    Queue object is global within each process only, not in the parent."""
+    global queue
+    queue = _queue
+
+def runContin(filedata, continConfig, useQueue=True):
     """Starts a single CONTIN process for the given DLS DataSet
     (which should contain a single angle only)."""
     continCmd = getContinPath()
     assert continCmd.is_file(), "CONTIN executable not found!"
-    filedata, continConfig = filedataAndConfigTuple
+    logPrefix = f"{filedata['filename'].name}@{continConfig['angle']}°: "
+    logFunc = queue.put if useQueue else print
+    def log(text):
+        #print("="+logPrefix+text)
+        logFunc(" "+logPrefix+text)
     try:
         continInData = genContinInput(filedata, **continConfig)
     except AssertionError:
-        print(f"Scattering angle {continConfig['angle']} not found!\n"
-              f"    Skipping '{filedata['filename'].name}'.")
+        log(f"Scattering angle {continConfig['angle']} not found! "
+            f"Skipping…")
         return
     workDir = filedata['filename'].parent
     #ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") # timestamp
@@ -159,8 +169,7 @@ def runContin(filedataAndConfigTuple):
         proc = subprocess.run([str(continCmd)], input=continInData,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if len(proc.stderr):
-            print(str(continInDataPath)+':')
-            print(proc.stderr.decode())
+            log(proc.stderr.decode().strip())
     # Store output data
     with open(continOutDataPath, 'wb') as fd:
         fd.write(proc.stdout)
@@ -191,17 +200,32 @@ def runContinOverFiles(fnLst, configLst, nthreads=None):
         configLst = (configLst,)
     dataLst = readData(fnLst, configLst)
     # get all combinations of CONTIN parameters and data files
-    dataNConfig = [(dn, cfg) for dn in dataLst for cfg in configLst]
+    dataNConfig = [(data, cfg) for data in dataLst for cfg in configLst]
     if nthreads == 1:
-        resultDirs = [runContin(dc) for dc in dataNConfig]
+        resultDirs = [runContin(data, cfg, False) for data, cfg in dataNConfig]
     else: # Using multiple CPU cores if available
         import multiprocessing
         if not nthreads:
             nthreads = multiprocessing.cpu_count()
-        pool = multiprocessing.Pool(processes = nthreads)
-        resultDirs = pool.map(runContin, dataNConfig)
+        from multiprocessing import Queue as MPQueue
+        logQueue = MPQueue()
+        pool = multiprocessing.Pool(processes=nthreads, initializer=workerInit, initargs=(logQueue,))
+        resultDirs = pool.starmap_async(runContin, dataNConfig)
         pool.close()
-        pool.join()
+        def resultReady(asyncResult):
+            try:
+                asyncResult.successful()
+            except ValueError:
+                return False
+            return True
+        while not resultReady(resultDirs):
+            time.sleep(.5)
+            #print(f"not ready! {time.time()-start:.1f}s")
+            while not logQueue.empty():
+                print(logQueue.get_nowait())
+        #print("READY!")
+        resultDirs = resultDirs.get()
+
     print()
     print(f"CONTIN analysis with {nthreads} thread{'s' if nthreads > 1 else ''} took {time.time()-start:.1f}s.")
     return [rd for rd in resultDirs if rd is not None]
