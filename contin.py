@@ -195,6 +195,17 @@ def readData(fnLst, configLst):
     return dataLst
 
 def runContinOverFiles(fnLst, configLst, nthreads=None, outputCallback=None):
+    """*fnLst*: List of file paths to .ASC files
+       *configLst*: List of parameters, one dict for each file, such as
+            {'recalc': True, 'gridpts': 200, 'transformData': True,
+             'ptRangeSec': (3e-07, 1.0), 'fitRangeM': (7e-10, 3.9e-07),
+              'baselineCoeffs': 0, 'weighResiduals': True}
+       *nthreads*: number of parallel CONTIN processes to launch,
+           1: Sequential processing, one file after another
+           None: number of processes equals the number of computing cores
+       *outputCallback*: A function with one argument to called repeatedly (0.5s)
+           with new output messages combined from all CONTIN processes.
+    """
     start = time.time()
     if not isList(configLst):
         configLst = (configLst,)
@@ -208,11 +219,12 @@ def runContinOverFiles(fnLst, configLst, nthreads=None, outputCallback=None):
         if not nthreads:
             nthreads = multiprocessing.cpu_count()
         from multiprocessing import Queue as MPQueue
+        # use a queue to collect stdout messages from subprocesses
         logQueue = MPQueue()
         pool = multiprocessing.Pool(processes=nthreads, initializer=workerInit, initargs=(logQueue,))
         resultDirs = pool.starmap_async(runContin, dataNConfig)
         pool.close()
-        def resultReady(asyncResult):
+        def resultReady(asyncResult): # checks if the overall result is ready
             try:
                 asyncResult.successful()
             except ValueError:
