@@ -234,9 +234,8 @@ def runContinOverFiles(fnLst, configLst, nthreads=None, outputCallback=None):
         #print("READY!")
         resultDirs = resultDirs.get()
 
-    print()
-    print(f"CONTIN analysis with {nthreads} thread{'s' if nthreads > 1 else ''} took {time.time()-start:.1f}s.")
-    return [rd for rd in resultDirs if rd is not None]
+    summary = f"CONTIN analysis with {nthreads} thread{'s' if nthreads > 1 else ''} took {time.time()-start:.1f}s."
+    return [rd for rd in resultDirs if rd is not None], summary
 
 def getValueDictFromLines(lines, **kwargs):
     """Searches the given list of lines for the keys in the provided dict and converts the values to float.
