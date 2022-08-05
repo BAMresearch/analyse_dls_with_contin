@@ -194,7 +194,7 @@ def readData(fnLst, configLst):
             dataLst[i]['score'][angle] = score
     return dataLst
 
-def runContinOverFiles(fnLst, configLst, nthreads=None):
+def runContinOverFiles(fnLst, configLst, nthreads=None, outputCallback=None):
     start = time.time()
     if not isList(configLst):
         configLst = (configLst,)
@@ -218,11 +218,19 @@ def runContinOverFiles(fnLst, configLst, nthreads=None):
             except ValueError:
                 return False
             return True
+        outputBuffer = [] # buffer to store output messages from queue in,
+                          # for sorting, for deterministic testing
         while not resultReady(resultDirs):
-            time.sleep(.5)
-            #print(f"not ready! {time.time()-start:.1f}s")
+            time.sleep(.5) # update interval of output
             while not logQueue.empty():
-                print(logQueue.get_nowait())
+                newOutput = logQueue.get_nowait()
+                if not outputCallback:
+                    print(newOutput) # the traditional way
+                else:
+                    outputBuffer.extend(newOutput.splitlines())
+            if callable(outputCallback):
+                # use a custom callback to handle the output from subprocesses
+                outputCallback("\n".join(sorted(outputBuffer)))
         #print("READY!")
         resultDirs = resultDirs.get()
 
