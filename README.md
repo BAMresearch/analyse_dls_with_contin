@@ -1,7 +1,7 @@
 # Analyse DLS with CONTIN (for Python)
 
-![CI](https://github.com/BAMresearch/analyse_dls_with_contin/actions/workflows/tests.yml/badge.svg?branch=main)
-![CI](https://github.com/BAMresearch/analyse_dls_with_contin/actions/workflows/doc.yml/badge.svg?branch=main)
+[![Testing](https://github.com/BAMresearch/analyse_dls_with_contin/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/BAMresearch/analyse_dls_with_contin/actions/workflows/tests.yml)
+[![Documentation](https://github.com/BAMresearch/analyse_dls_with_contin/actions/workflows/doc.yml/badge.svg?branch=main)](https://github.com/BAMresearch/analyse_dls_with_contin/actions/workflows/doc.yml)
 
 This repository contains Python code and a Jupyter Notebook
 running the original [CONTIN program by S. Provencher](http://dx.doi.org/10.1016/0010-4655(82)90174-6)
