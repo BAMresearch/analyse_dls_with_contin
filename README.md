@@ -1,3 +1,8 @@
+# Analyse DLS with CONTIN (for Python)
+
+![CI](https://github.com/BAMresearch/analyse_dls_with_contin/actions/workflows/tests.yml/badge.svg?branch=main)
+![CI](https://github.com/BAMresearch/analyse_dls_with_contin/actions/workflows/doc.yml/badge.svg?branch=main)
+
 This repository contains Python code and a Jupyter Notebook
 running the original [CONTIN program by S. Provencher](http://dx.doi.org/10.1016/0010-4655(82)90174-6)
 on every DLS measurement (dynamic light scattering, aka. photon correlation spectroscopy, PCS)
