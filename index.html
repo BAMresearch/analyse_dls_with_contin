@@ -37,42 +37,6 @@
 </section>
 <section id="attenuation-specified-in-sample-description">
 <h1>Attenuation specified in sample description<a class="headerlink" href="#attenuation-specified-in-sample-description" title="Permalink to this headline">¶</a></h1>
-<dl class="py function">
-<dt class="sig sig-object py">
-<span class="sig-prename descclassname"><span class="pre">dlshelpers.</span></span><span class="sig-name descname"><span class="pre">getAttenuationFromMemo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">memo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">detectorKey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'detektor'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">levelKey</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stufe'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Extract manually specified attenuation of individual scattering angles from a given
-measurement data files (ASC) <em>SampMemo</em> field.
-Different notations and numbers of detectors are accepted (test cases):</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;Toluolmessung für Statik,, Detektor 1 und 2, 1 Stufe abgeschwächt&quot;</span><span class="p">)</span>
-<span class="go">[0.1, 0.3, 1.0, 1.0]</span>
-</pre></div>
-</div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;Toluolmessung für Statik,, Detektor 1 und 2, 1 Stufe abgeschwächt, Detektor 3 , 2 Stufen abgeschwächt&quot;</span><span class="p">)</span>
-<span class="go">[0.1, 0.3, 0.1, 1.0]</span>
-</pre></div>
-</div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;Toluolmessung für Statik,, Detektor 1 und 2, 1 Stufe abgeschwächt, Detektor 3 und 4, 2 Stufen abgeschwächt&quot;</span><span class="p">)</span>
-<span class="go">[0.1, 0.3, 0.1, 0.1]</span>
-</pre></div>
-</div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;Toluolmessung für Statik,, Detektor 1, 1 Stufe abgeschwächt, Detektor 3 , 2 Stufen abgeschwächt&quot;</span><span class="p">)</span>
-<span class="go">[0.1, 1.0, 0.1, 1.0]</span>
-</pre></div>
-</div>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">getAttenuationFromMemo</span><span class="p">(</span><span class="s2">&quot;1:100 verdünnt mit Wasser, ungefiltert,, Detektor 1(10%) und 2(30%), 1 Stufe abgeschwächt&quot;</span><span class="p">)</span>
-<span class="go">[0.1, 0.3, 1.0, 1.0]</span>
-</pre></div>
-</div>
-<p>Table of transmission levels 1-4 (columns) as defined in the program for detectors 1-4 (rows):</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">transmissionLevels</span><span class="p">)</span>
-<span class="go">[[1.   0.1  0.03 0.01]</span>
-<span class="go"> [1.   0.3  0.1  0.03]</span>
-<span class="go"> [1.   0.3  0.1  0.03]</span>
-<span class="go"> [1.   0.3  0.1  0.03]]</span>
-</pre></div>
-</div>
-</dd></dl>
-
 </section>
 
 
