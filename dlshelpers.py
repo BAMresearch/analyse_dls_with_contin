@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # utils.py
 
-import os, re
+import os, re, io
 from warnings import warn
 from pathlib import Path
 from dateutil.parser import parse as parseDateTime
 import numpy as np
 import pandas as pd
+from jupyter_analysis_tools.utils import isList
 
 # transmission levels of ALV-CGS4F/8F given in measurement software, angles/detectors 1-4
 transmissionLevels = np.array(((1., .1, .03, .01),)+((1., .3, .1, .03),)*3)
@@ -30,10 +31,130 @@ def parseValue(val):
         pass
     return val
 
-def getDLSFileMeta(filenameOrBuffer, encoding='cp1250'):
-    # read the measurement settings (temperature, viscosity, refractive index and wavelength)
-    # only for 'ALV-7004 CGS-8F Data' data files
-    meta = pd.read_csv(filenameOrBuffer, sep=':', skiprows=1, nrows=39, encoding=encoding,
+def getDLSFileMeta(lines, encoding='cp1250'):
+    """Reads the measurement settings (temperature, viscosity, refractive index and wavelength)
+    >>> from pprint import pprint
+    >>> with open("testdata/water/093 2021 Wasser0000_0001.ASC", encoding='cp1250') as fh:\
+            pprint(getDLSFileMeta(fh.readlines()))
+    {'Angle(1)[°]': 26.0,
+     'Angle(2)[°]': 42.0,
+     'Angle(3)[°]': 58.0,
+     'Angle(4)[°]': 74.0,
+     'Angle(5)[°]': 90.0,
+     'Angle(6)[°]': 106.0,
+     'Angle(7)[°]': 122.0,
+     'Angle(8)[°]': 138.0,
+     'Atten[1]': 1.0,
+     'Atten[2]': 1.0,
+     'Atten[3]': 1.0,
+     'Correlation': '',
+     'DC[1][kHz]': 0.0,
+     'DC[2][kHz]': 0.0,
+     'DC[3][kHz]': 0.0,
+     'DC[4][kHz]': 0.0,
+     'DC[5][kHz]': 0.0,
+     'DC[6][kHz]': 0.0,
+     'DC[7][kHz]': 0.0,
+     'DC[8][kHz]': 0.0,
+     'Date': '11.05.2021',
+     'Duration [s]': 30.0,
+     'MeanCR1 [kHz]': 3.33436,
+     'MeanCR2 [kHz]': 2.38679,
+     'MeanCR3 [kHz]': 2.06514,
+     'MeanCR4 [kHz]': 1.71528,
+     'MeanCR5 [kHz]': 1.52074,
+     'MeanCR6 [kHz]': 2.09028,
+     'MeanCR7 [kHz]': 1.73645,
+     'MeanCR8 [kHz]': 1.11897,
+     'Mode': '8 x AUTO, 100 ns STC',
+     'Refractive Index': 1.332,
+     'RelSens[1]': 1.0,
+     'RelSens[2]': 1.0,
+     'RelSens[3]': 1.0,
+     'RelSens[4]': 1.0,
+     'RelSens[5]': 1.0,
+     'RelSens[6]': 1.0,
+     'RelSens[7]': 1.0,
+     'RelSens[8]': 1.0,
+     'Runs': 1.0,
+     'SampMemo(0)': 'Wasser-Messung ',
+     'SampMemo(1)': '',
+     'SampMemo(2)': '',
+     'SampMemo(3)': '',
+     'SampMemo(4)': '',
+     'SampMemo(5)': '',
+     'SampMemo(6)': '',
+     'SampMemo(7)': '',
+     'SampMemo(8)': '',
+     'SampMemo(9)': '',
+     'Samplename': '093 2021 Wasser',
+     'Temperature [K]': 292.95295,
+     'Time': '09:35:43',
+     'Viscosity [cp]': 1.0066,
+     'Wavelength [nm]': 632.8,
+     'corrStartLn': 57,
+     'crStartLn': 240,
+     'filetype': 'ALV-7004 CGS-8F Data, Single Run Data',
+     'monitorDiode': 1562861.47,
+     'monitorDiodeLn': 496}
+
+    >>> with open("testdata/cgs3/080622_3_0033_0002.ASC", encoding='cp1250') as fh:\
+            pprint(getDLSFileMeta(fh.readlines()))
+    {'Angle [°]': 90.0,
+     'Correlation': '',
+     'Date': '08.06.2022',
+     'Duration [s]': 10.0,
+     'FloatDur [ms]': 9961.0,
+     'MeanCR0 [kHz]': 305.63556,
+     'MeanCR1 [kHz]': 312.20247,
+     'MeanCR2 [kHz]': 0.0,
+     'MeanCR3 [kHz]': 0.0,
+     'Mode': 'C-CH0/1+1/0',
+     'Refractive Index': 1.332,
+     'Runs': 1.0,
+     'SampMemo(0)': '',
+     'SampMemo(1)': '',
+     'SampMemo(2)': '',
+     'SampMemo(3)': '',
+     'SampMemo(4)': '',
+     'SampMemo(5)': '',
+     'SampMemo(6)': '',
+     'SampMemo(7)': '',
+     'SampMemo(8)': '',
+     'SampMemo(9)': '',
+     'Samplename': 'Samplename needed.',
+     'Stop TP [ms]': 16777216.0,
+     'Temperature [K]': 297.9244,
+     'Time': '14:31:40',
+     'Viscosity [cp]': 0.89482,
+     'Wavelength [nm]': 632.8,
+     'corrStartLn': 29,
+     'crStartLn': 230,
+     'cum1StartLn': 487,
+     'cum2StartLn': 492,
+     'cum3StartLn': 498,
+     'filetype': 'ALV-7004/USB',
+     'monitorDiode': 152207.46,
+     'monitorDiodeLn': 485,
+     'stddevStartLn': 505}
+    """
+    assert isList(lines)
+    meta = {'filetype': lines[0].strip()}
+    sections = [('corrStartLn', '"Correlation"'), ('crStartLn', '"Count Rate"'),
+                ('monitorDiodeLn', 'Monitor Diode'), ('cum1StartLn', '"Cumulant 1.Order"'),
+                ('cum2StartLn', '"Cumulant 2.Order"'), ('cum3StartLn', '"Cumulant 3.Order"'),
+                ('stddevStartLn', '"StandardDeviation"')]
+    key, pattern = sections.pop(0)
+    for idx, line in enumerate(lines):
+        if pattern in line:
+            meta[key] = idx
+            if len(sections):
+                key, pattern = sections.pop(0)
+            else:
+                break
+    # read the recorded environment data, device settings and sample notes
+    df = pd.read_csv(io.StringIO("".join(lines)), sep=':', encoding=encoding,
+                       skiprows=1, nrows=meta['corrStartLn']-1,
                        index_col=0,
                        names=range(5), # also read fields containing two colons
                        na_filter=False, # don't replace empty fields with NaN
@@ -42,17 +163,26 @@ def getDLSFileMeta(filenameOrBuffer, encoding='cp1250'):
                        escapechar="\t", # filters any TAB whitespace
                        skipinitialspace=True # strips whitespace from fields outside of quotes
                       )
-    meta = {name.strip(): parseValue(':'.join(field for field in meta.T[name]
-                                              if len(field)).strip())
-            for name in meta.index}
+    # parse floats and put datetimes back together
+    meta.update({name.strip():
+                 parseValue(':'.join(field for field in df.T[name] if len(field)
+                                    ).strip())
+                 for name in df.index
+                })
+    meta['monitorDiode'] = float(lines[meta['monitorDiodeLn']].split()[-1])
     return meta
 
 def getDLSFileData(filename, showProgress=False, encoding='cp1250',
                    attenKeys={'key': 'abgeschwächt', 'detectorKey': 'detektor', 'levelKey': 'stufe'}):
+    """
+    #>>> getDLSFileData("testdata/water/093 2021 Wasser0000_0001.ASC")
+    """
     if showProgress:
         print('.', end="") # some progress output
     data = dict(filename=Path(filename).resolve())
-    header = getDLSFileMeta(str(filename))
+    with open(data['filename'], encoding=encoding) as fh:
+        filedata = fh.readlines()
+    header = getDLSFileMeta(filedata)
     data.update(sampleName=header["Samplename"])
     data.update(timestamp=parseDateTime(header['Date']+' '+header['Time']))
     # parsing the scattering angles
