@@ -11,9 +11,13 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
-from .jupyter_analysis_tools.utils import isWindows, isMac, isList, pushd, grouper, updatedDict
-from .jupyter_analysis_tools.analysis import getModZScore
-from .dlshelpers import getDLSgammaSi, getDLSFileData
+import sys
+cwd = Path().resolve()
+if cwd not in sys.path:
+    sys.path.insert(0, str(cwd))
+from jupyter_analysis_tools.utils import isWindows, isMac, isList, pushd, grouper, updatedDict
+from jupyter_analysis_tools.analysis import getModZScore
+from dlshelpers import getDLSgammaSi, getDLSFileData
 
 InputFn = "contin_in.txt"
 OutputFn = "contin_out.txt"
