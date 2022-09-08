@@ -30,8 +30,10 @@ The main environmental conditions of each measurement are stored in each data fi
   Apparent diffusion constant extrapolated to q^2 = 0: 
                            D_0 = 3.463e-08 +/- 3.898e-10 cm^2/s 
   Hydrodynamic radius from D_0 :
-                           Rh(D_0) = 61.524 +/- 0.692 nm 
+                           Rh(D_0) = 61.524 +/- 0.692 nm
   ```
+- *cgs3*: Measurements with a ALV/CGS-3 Goniometer device in a slightly different file format as provided by Vincent in issue #1. At 13 different angles, three measurements per angle were aquired plus an averaged file computed from these measurements.
+
 ## Intended use
 The main purposes of this data are functional and regression tests of the analysis Python code, respectively reading the data format correctly and reproducing analysis results during iterative software development steps consistently.
 
