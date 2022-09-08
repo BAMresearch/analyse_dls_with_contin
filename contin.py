@@ -254,14 +254,20 @@ def runContinOverFiles(fnLst, configLst, nthreads=None, outputCallback=None):
     return [rd for rd in resultDirs if rd is not None], summary
 
 def getValueDictFromLines(lines, **kwargs):
-    """Searches the given list of lines for the keys in the provided dict and converts the values to float.
-    Returns the completed dict."""
-    for li, line in enumerate(lines):
-        if "FINAL VALUES OF CONTROL VARIABLES" in line:
-            end = li
-            break
-    return {key: float(line.split()[-1])
-            for line in lines[8:end] for key, pattern in kwargs.items() if pattern in line}
+    """Searches the given list of lines for the keys of the given arguments
+    and converts the values to float. Returns the completed dict."""
+    # search begin of common variables
+    lstart = [idx for idx, line in enumerate(lines)
+                  if "INPUT DATA FOR CHANGES TO COMMON VARIABLES" in line]
+    # search end of common variables section (where the next begins)
+    lend   = [idx for idx, line in enumerate(lines)
+                  if "FINAL VALUES OF CONTROL VARIABLES" in line]
+    result = dict()
+    if len(lstart) and len(lend):
+        result = {key: float(line.split()[-1])
+                    for line in lines[lstart[0]:lend[0]]
+                    for key, pattern in kwargs.items() if pattern in line}
+    return result
 
 def convertContinResultsToSizes(lines, df):
     # user variables for environmental values as set by CNTb scripts
