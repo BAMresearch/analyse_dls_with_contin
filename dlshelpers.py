@@ -23,29 +23,29 @@ def getDLSgammaSi(angle, refrac, wavelen, temp, visc):
     return calcDLSconst(angleToQ(angle, refrac, wavelen), temp, visc)
 
 def parseValue(val):
-        val = val.strip('"')
-        try:
-            val = float(val)
-        except ValueError:
-            pass
-        return val
+    val = val.strip('"')
+    try:
+        val = float(val)
+    except ValueError:
+        pass
+    return val
 
 def getDLSFileMeta(filenameOrBuffer, encoding='cp1250'):
-        # read the measurement settings (temperature, viscosity, refractive index and wavelength)
-        # only for 'ALV-7004 CGS-8F Data' data files
-        meta = pd.read_csv(filenameOrBuffer, sep=':', skiprows=1, nrows=39, encoding=encoding,
-                           index_col=0,
-                           names=range(5), # also read fields containing two colons
-                           na_filter=False, # don't replace empty fields with NaN
-                           header=None,
-                           #quotechar='"',
-                           escapechar="\t", # filters any TAB whitespace
-                           skipinitialspace=True # strips whitespace from fields outside of quotes
-                          )
-        meta = {name.strip(): parseValue(':'.join(field for field in meta.T[name]
-                                                  if len(field)).strip())
-                for name in meta.index}
-        return meta
+    # read the measurement settings (temperature, viscosity, refractive index and wavelength)
+    # only for 'ALV-7004 CGS-8F Data' data files
+    meta = pd.read_csv(filenameOrBuffer, sep=':', skiprows=1, nrows=39, encoding=encoding,
+                       index_col=0,
+                       names=range(5), # also read fields containing two colons
+                       na_filter=False, # don't replace empty fields with NaN
+                       header=None,
+                       #quotechar='"',
+                       escapechar="\t", # filters any TAB whitespace
+                       skipinitialspace=True # strips whitespace from fields outside of quotes
+                      )
+    meta = {name.strip(): parseValue(':'.join(field for field in meta.T[name]
+                                              if len(field)).strip())
+            for name in meta.index}
+    return meta
 
 def getDLSFileData(filename, showProgress=False, encoding='cp1250',
                    attenKeys={'key': 'abgeschwächt', 'detectorKey': 'detektor', 'levelKey': 'stufe'}):
