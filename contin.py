@@ -269,20 +269,19 @@ def getValueDictFromLines(lines, **kwargs):
                     for key, pattern in kwargs.items() if pattern in line}
     return result
 
-def convertContinResultsToSizes(lines, df):
-    # user variables for environmental values as set by CNTb scripts
+def getContinUserVars(lines):
+    """Extract previously set user variables for environmental values
+    from CONTIN output data.
+    *lines*: List of lines of CONTIN output data."""
     varmap = getValueDictFromLines(lines,
                 temp="RUSER    18", angle="RUSER    17", visc="RUSER    19",
                 refrac="RUSER    15", wavelen="RUSER    16", score="RUSER    11")
     # convert to SI units
     varmap["visc"] *= 1e-3
     varmap["wavelen"] *= 1e-9
-    gamma = getDLSgammaSi(varmap["angle"], varmap["refrac"], varmap["wavelen"], varmap["temp"], varmap["visc"])
-    # unclear if gamma needs doubled due to G2(t)-1 = g1(t)^2 = exp(-t*gamma)^2
-    df["abscissa"] *= gamma
-    df.rename(columns={'abscissa': 'radius', 'ordinate': 'distrib', 'error': 'err'},
-              inplace=True)
-    return df, varmap
+    varmap["gamma"] = getDLSgammaSi(varmap["angle"], varmap["refrac"], varmap["wavelen"],
+                                    varmap["temp"], varmap["visc"])
+    return varmap
 
 def getLineNumber(lines, phrases, debug=False):
     """Returns the line numbers containing the provided phrases after searching
@@ -322,7 +321,7 @@ def getContinResults(sampleDir, angle=None):
         resultsFile = sampleDir / getContinOutputDirname(float(angle)) / OutputFn
         if not resultsFile.is_file():
             print("No distribution found in\n '{}'!".format(resultsFile.parent))
-            return None, None
+            return None, None, None
     # read in line by line, some adjustments required for parsing floats
     lines = []
     with open(resultsFile) as fd:
@@ -331,7 +330,7 @@ def getContinResults(sampleDir, angle=None):
     startLines = getLineNumber(lines, ["T            Y", "0PRECIS"])
     if not len(startLines):
         print(f"Fitted curve not found in CONTIN output!\n ({resultsFile})")
-        return None, None
+        return None, None, None
     dfStart, dfEnd = startLines[-2]+1, startLines[-1]
     dfFit = pd.DataFrame([f for line in lines[dfStart:dfEnd] for f in grouper(line.split(), 2)],
                          columns=('tau', 'corrFit'), dtype=float)
@@ -342,7 +341,7 @@ def getContinResults(sampleDir, angle=None):
     startLines = getLineNumber(lines, ["CHOSEN SOLUTION", "ORDINATE"])
     if not len(startLines):
         print(f"Distribution data not found in CONTIN output!\n ({resultsFile})")
-        return None, None
+        return None, None, None
     gridSize = int(getValueDictFromLines(lines, distribSize="NG        0").get('distribSize',0))
     dfStart = startLines[1]+1
     lineEnd = 31 # do not parse floats beyond this column
@@ -350,15 +349,17 @@ def getContinResults(sampleDir, angle=None):
     fixedFloatFmt = io.StringIO("\n".join([line[:lineEnd].replace("D", "E")
                                 for line in lines[dfStart:dfStart+gridSize]]))
     dfDistrib = pd.read_csv(fixedFloatFmt, delim_whitespace=True,
-                            names=("ordinate", "error", "abscissa"))
-    # update x/abscissa values to avoid duplicates due to low precision in final solution output
+                            names=("distrib", "err", "decay"))
+    dfDistrib = dfDistrib[["decay", "distrib", "err"]] # reorder to (x,y,u)
+    # update x/abscissa with values from another section of the output
+    # to avoid duplicates due to low precision in solution output parsed above
     startLines = getLineNumber(lines, ["GRID POINT"])
     if len(startLines):
         dfStart = startLines[0]+1
-        abscissa = np.fromiter([line.split()[0] for line in lines[dfStart:dfStart+gridSize]], float)
-        dfDistrib.abscissa = abscissa
-    dfDistrib, varmap = convertContinResultsToSizes(lines, dfDistrib)
-    # parse original input data as well, if available
+        decayNew = np.fromiter([line.split()[0] for line in lines[dfStart:dfStart+gridSize]], float)
+        dfDistrib.decay = decayNew
+    varmap = getContinUserVars(lines)
+    # parse original input data filename as well, if available
     infn = sampleDir.parent / lines[0][52:].strip()
     varmap['dataFilename'] = infn
     return dfDistrib, dfFit, varmap
