@@ -31,6 +31,6 @@ jobs:
           pip install pytest
 #          pip install -e .[testing]
       - name: Run pytest
-        run: pytest
+        run: PYTHONPATH=. pytest
 
 # vim: set ts=2 sts=2 sw=2 tw=0 et:
