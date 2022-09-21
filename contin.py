@@ -8,7 +8,7 @@ import urllib
 import requests
 import itertools
 from pathlib import Path
-from bs4 import BeautifulSoup
+from beautifulsoup4 import BeautifulSoup
 import pandas as pd
 import numpy as np
 import sys
