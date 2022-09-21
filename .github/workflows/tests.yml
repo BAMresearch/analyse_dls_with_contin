@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pandas requests dateutil
+          pip install pytest pandas requests python-dateutil
       - name: Run pytest
         run: PYTHONPATH=. pytest
 
