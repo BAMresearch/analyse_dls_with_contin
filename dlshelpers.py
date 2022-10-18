@@ -89,6 +89,10 @@ def getDLSFileData(filename, showProgress=False, encoding='cp1250',
     *Mode*: The mode describes which channels (count rate columns) were used for auto- or
     cross-correlation, as given in
     [the specs sheet by ALV](https://www.alvgmbh.de/dwnload/alv7000specs.pdf).
+    *corr*: Data with `C-CH0/1+1/0` mode contain the cross-correlation of two channels
+            in both directions in the first and second column. Both columns are averaged
+            on load and the averaged column is prepended and indexed with the measurement
+            angle, to be used for further processing (improves data quality, see issue #1).
     **For examples**, please see the tests for this function in `tests/test_dlshelpers.py`.
     """
     if showProgress:
@@ -144,6 +148,8 @@ def getDLSFileData(filename, showProgress=False, encoding='cp1250',
     corr = pd.read_csv(bufferFromLines(filelines), encoding=encoding, sep=r'\s+',
                        index_col=0, header=None,
                        skiprows=startln, nrows=endln-startln)
+    if data['Mode'].strip() == "C-CH0/1+1/0": # cross-correlation of two channels in both directions
+        corr.insert(0, 0, corr.iloc[:,:2].mean(axis=1))
 
     # adjust column names if more columns than angles were found
     columns = angles
@@ -151,7 +157,7 @@ def getDLSFileData(filename, showProgress=False, encoding='cp1250',
         # repeat the last angle with suffix if there are more columns
         columns = columns + ([columns[-1],] * (len(corr.columns) - len(columns)))
         columns = [f"{int(angle)}_{idx}" if idx else angle for idx, angle in enumerate(columns)]
-    corr.rename(columns=lambda col: columns[col-1], inplace = True)
+    corr.rename(columns=dict(zip(corr.columns, columns)), inplace = True)
     corr.index.names = ["tau"]
     data['correlation'] = corr
     
@@ -159,8 +165,14 @@ def getDLSFileData(filename, showProgress=False, encoding='cp1250',
     if data['sections']['crStartLn'] > 0: # does not exist in an 'averaged' data file
         startln, endln = data['sections']['crStartLn']+1, sectionEndLn(data['sections']['crStartLn'])
         cr = pd.read_csv(bufferFromLines(filelines), encoding=encoding, sep=r'\s+',
-                         names=["time"]+columns, index_col=0,
+                         #names=["time"]+columns,
+                         header=None,
+                         index_col=0,
                          skiprows=startln, nrows=endln-startln)
+        if data['Mode'].strip() == "C-CH0/1+1/0": # cross-correlation of two channels in both directions
+            cr.insert(0, 0, cr.iloc[:,:2].mean(axis=1))
+        cr.rename(columns=dict(zip(cr.columns, columns)), inplace = True)
+        cr.index.names = ["time"]
         data['countrate'] = cr
 
     # read cumulants from data
