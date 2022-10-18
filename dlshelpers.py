@@ -65,7 +65,7 @@ def getDLSFileMeta(lines, encoding='cp1250'):
     df = pd.read_csv(bufferFromLines(lines), sep=':', encoding=encoding,
                        skiprows=1, nrows=meta['sections']['corrStartLn']-2,
                        index_col=0,
-                       names=range(5), # also read fields containing two colons
+                       names=range(5), # also read lines containing more colons = multiple fields
                        na_filter=False, # don't replace empty fields with NaN
                        header=None,
                        #quotechar='"',
