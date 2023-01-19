@@ -7,7 +7,7 @@ from pathlib import PosixPath
 import pandas as pd
 from jupyter_analysis_tools.utils import isList
 
-from dlshelpers import getDLSFileMeta, getDLSFileData
+from dlshelpers import readDLSMetaASC, readDLSDataASC
 
 @pytest.fixture
 def filepaths_and_metadata():
@@ -173,11 +173,11 @@ def filepaths_and_metadata():
                           'stddevStartLn': 505}})
             ]
 
-def test_getDLSFileMeta(filepaths_and_metadata):
+def test_readDLSMetaASC(filepaths_and_metadata):
     for filepath, metaData in filepaths_and_metadata:
         with open(filepath, encoding='cp1250') as fh:
             lines = fh.readlines()
-        assert metaData == getDLSFileMeta(lines)
+        assert metaData == readDLSMetaASC(lines)
 
 @pytest.fixture
 def filedata():
@@ -2348,10 +2348,10 @@ def convertDataFrames(val):
         return type(val)([convertDataFrames(v) for v in val])
     return val
 
-def test_getDLSFileData(filedata):
+def test_readDLSDataASC(filedata):
     for fd in filedata:
         assert 'filename' in fd
         assert fd['filename'].is_file()
-        parsed = getDLSFileData(fd['filename'])
+        parsed = readDLSDataASC(fd['filename'])
         assert fd == {key: convertDataFrames(value)
                       for key,value in parsed.items()}

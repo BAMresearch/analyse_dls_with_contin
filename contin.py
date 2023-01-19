@@ -17,7 +17,7 @@ if cwd not in sys.path:
     sys.path.insert(0, str(cwd))
 from jupyter_analysis_tools.utils import isWindows, isMac, isList, pushd, grouper, updatedDict
 from jupyter_analysis_tools.analysis import getModZScore
-from dlshelpers import getDLSgammaSi, getDLSFileData
+from dlshelpers import getDLSgammaSi, readDLSData
 
 InputFn = "contin_in.txt"
 OutputFn = "contin_out.txt"
@@ -51,7 +51,7 @@ def getContinPath():
     raise NotImplementedError("Don't know how to retrieve the CONTIN executable!")
 
 def genContinInput(filedata, **continConfig):
-    """Expects a dictionary of file data created by getDLSFileData()."""
+    """Expects a dictionary of file data created by readDLSData()."""
     IWT = 5 if continConfig['weighResiduals'] else 1
     # transform data? Trd=0: no transform
     Trd = -1 # Trd=1: initial g(2), input sqrt[g(2)-1]; Trd=-1: initial g(2)-1, input sqrt[g(2)-1]
@@ -83,8 +83,11 @@ def genContinInput(filedata, **continConfig):
     npts = len(tauCropped)
     # store the score for this data if it was determined
     scoreRecord = f"\n RUSER    11    {filedata['score'][angle]:.3E}" if 'score' in filedata else ""
+    storedFn = filedata['filename'].name
+    if not filedata['filename'].is_file():
+        storedFn = filedata['filename'].parent.suffix + '/' + storedFn
     # generate CONTIN input file
-    content = f"""{filedata['filename'].name}
+    content = f"""{storedFn}
  IFORMY    0    .00
  (6E13.7)
  IFORMT    0    .00
@@ -146,6 +149,10 @@ def runContin(filedata, continConfig, useQueue=True):
     continCmd = getContinPath()
     assert continCmd.is_file(), "CONTIN executable not found!"
     logPrefix = f"{filedata['filename'].name}@{continConfig['angle']}°: "
+    workDir = filedata['filename'].parent
+    if workDir.is_file():
+        logPrefix = workDir.stem + '/' + logPrefix
+        workDir = workDir.parent / workDir.stem
     logFunc = queue.put if useQueue else print
     def log(text):
         #print("="+logPrefix+text)
@@ -156,7 +163,6 @@ def runContin(filedata, continConfig, useQueue=True):
         log(f"Scattering angle {continConfig['angle']} not found! "
             f"Skipping…")
         return
-    workDir = filedata['filename'].parent
     #ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") # timestamp
     tmpDir = workDir / (getContinOutputDirname(continConfig['angle'])+' '+filedata['filename'].stem)
     if tmpDir.is_dir(): # deleting old results
@@ -181,7 +187,7 @@ def runContin(filedata, continConfig, useQueue=True):
 
 def readData(fnLst, configLst):
     angles = [cfg['angle'] for cfg in configLst]
-    dataLst = [getDLSFileData(fn) for fn in fnLst]
+    dataLst = readDLSData(fnLst)
     # calc modified Z-Score based on median absolute deviation
     # for each count rate at the same angle
     for angle in set(angles):
@@ -360,6 +366,10 @@ def getContinResults(sampleDir, angle=None):
         dfDistrib.decay = decayNew
     varmap = getContinUserVars(lines)
     # parse original input data filename as well, if available
-    infn = sampleDir.parent / lines[0][52:].strip()
+    # see genContinInput() for creating storedFn
+    storedFn = lines[0][52:].strip()
+    infn = sampleDir.parent / storedFn
+    if storedFn[0] == '.': # starts with a dot
+        infn = sampleDir.parent.parent / (sampleDir.parent.name + storedFn)
     varmap['dataFilename'] = infn
     return dfDistrib, dfFit, varmap

@@ -5,6 +5,11 @@ import os, re, io, codecs
 from warnings import warn
 from pathlib import Path
 from dateutil.parser import parse as parseDateTime
+import zipfile
+import bson
+import pprint
+from uuid import UUID
+
 import numpy as np
 import pandas as pd
 from jupyter_analysis_tools.utils import isList
@@ -35,12 +40,12 @@ def bufferFromLines(ln):
     assert isList(ln)
     return io.StringIO("".join(ln))
 
-def getDLSFileMeta(lines, encoding='cp1250'):
+def readDLSMetaASC(lines, encoding='cp1250'):
     """Reads the measurement settings (temperature, viscosity, refractive index and wavelength).
     The *MeanCR* field is ignored because they were found to be either inconsistent with the
     recorded count rate in the same file (type `ALV-7004/USB`) or they have the wrong ordering
     compared to the recorded count rate in the same file (type `ALV-7004 CGS-8F Data`). The
-    means can be calculated easily from the count rate read by *getDLSFileData()*.
+    means can be calculated easily from the count rate read by *readDLSDataASC()*.
     **For examples**, please see the tests for this function in `tests/test_dlshelpers.py`.
     """
     assert isList(lines)
@@ -83,7 +88,7 @@ def getDLSFileMeta(lines, encoding='cp1250'):
     # return the sorted dict
     return meta
 
-def getDLSFileData(filename, showProgress=False, encoding='cp1250',
+def readDLSDataASC(filename, showProgress=False, encoding='cp1250',
                    attenKeys={'key': 'abgeschwächt', 'detectorKey': 'detektor', 'levelKey': 'stufe'}):
     """
     *Mode*: The mode describes which channels (count rate columns) were used for auto- or
@@ -101,7 +106,7 @@ def getDLSFileData(filename, showProgress=False, encoding='cp1250',
     filelines = []
     with codecs.open(filename, encoding=encoding) as fh:
         filelines = [ln for ln in fh.readlines() if len(ln.strip())] # filter empty lines
-    data = getDLSFileMeta(filelines)
+    data = readDLSMetaASC(filelines)
     data['filename'] = filename
     data['timestamp'] = parseDateTime(data['Date']+' '+data['Time'])
 
@@ -246,6 +251,66 @@ def getAttenuationFromMemo(memo, count=4, detectorKey='detektor', levelKey='stuf
         for d, val in detector:
             atten[d] = val
     return atten
+
+def convertAPKWentries(data):
+    """Gets a data dictionary loaded from an APKW file and adds or converts field
+    values for compatibility with existing code."""
+    data['timestamp'] = data['MetaInfo']['StartTime']
+    data['Samplename'] = data['InputParameter']['Name']
+    data['memo'] = data['InputParameter']['Comment']
+    data['memofields'] = [field.strip(' ,;') for field in data['memo'].split()] # same a in getDLSFileData()
+    data['concentration'] = 1
+    # use the ref. index value of the solvent
+    data['Refractive Index'] = data['InputParameter']['Solvent']['RefractiveIndex']
+    if data['Refractive Index'] == 0.:
+        # if the ref. index of the solvent is not set for some reason, use that of the material
+        data['Refractive Index'] = data['InputParameter']['Material']['RefractiveIndex']
+    data['Wavelength [nm]'] = data['InputParameter']['Solvent']['Wavelength']*1e9
+    data['Temperature [K]'] = data['InputParameter']['Solvent']['Temperature']
+    data['Viscosity [cp]'] = data['InputParameter']['Solvent']['Viscosity']*1e3
+    if data['MetaInfo']['InstrumentType'] == 'Litesizer 100':
+        data['Angle [°]'] = 175.
+        data['angles'] = [data['Angle [°]']]
+    data['correlation'] = pd.DataFrame(data['RawData'][0]['CorrelationDataScaled'],
+                                       columns=data['angles'],
+                                       index=data['RawData'][0]['CorrelationDelayTimes'],)
+    data['correlation'] -= 1.
+    data['correlation'].index *= 1e3
+    data['correlation'].index.names = ["tau"]
+    data['countrate'] = pd.DataFrame(data['RawData'][0]['IntensityTrace'], columns=data['angles'])
+    data['Duration [s]'] = data['InputParameter']['MeasurementTime']
+    data['countrate'].index = np.linspace(0, data['Duration [s]'], data['countrate'][175].size)
+    data['attenuation'] = pd.DataFrame({data['Angle [°]']: (data['Attenuation'],)})
+    return data
+
+def readDLSDataAPKW(filename):
+    """Yields none or more unique dicts, one for each measurement,
+    stored in the given APKW file name."""
+    #print(filename)
+    filename = Path(filename)
+    if zipfile.is_zipfile(filename):
+        with zipfile.ZipFile(filename, 'r') as zf:
+            for zi in zf.infolist():
+                if zi.filename.startswith('measurement'):
+                    #print(zi)
+                    data = bson.loads(zf.read(zi))
+                    #pprint.pprint(data)
+                    if data['StorageStatus'] == 3 and data['UsedAngle'] > 0:
+                        data['filename'] = filename / str(data['Id']) # remember it here
+                        yield convertAPKWentries(data)
+
+def readDLSData(files, *args, **kwargs):
+    """Read DLS measurements from provided files, *.ASC or *.apkw are supported."""
+    if not isinstance(files, list) and not isinstance(files, tuple):
+        files = (files,)
+    # gather all measurement data from APKW files first
+    dirData = list({datadict['Id']: datadict
+                    for fn in files
+                    for datadict in readDLSDataAPKW(fn)}.values())
+    # try to read ASC files
+    if not len(dirData):
+        dirData = [readDLSDataASC(fn) for fn in files]
+    return dirData
 
 if __name__ == "__main__":
     import doctest
