@@ -281,9 +281,12 @@ def convertAPKWentries(data):
     data['correlation'].index *= 1e3
     data['correlation'].index.names = ["tau"]
     data['countrate'] = pd.DataFrame(data['RawData'][0]['IntensityTrace'], columns=data['angles'])
-    del data['RawData'] # not needed anymore, duplicate data
+    data['countrate'] *= 10. # converted to match the exported XLS sheet data
+    del data['RawData'] # remove obsolete, duplicate data
     data['Duration [s]'] = data['InputParameter']['MeasurementTime']
-    data['countrate'].index = np.linspace(0, data['Duration [s]'], data['countrate'][175].size)
+    # hardcoded count rate reading times? nowhere stored in file
+    data['countrate'].index = np.linspace(0.1, 0.1*data['countrate'][data['Angle [°]']].size,
+                                          data['countrate'][data['Angle [°]']].size)
     data['attenuation'] = pd.DataFrame({data['Angle [°]']: (data['Attenuation'],)})
     return data
 
