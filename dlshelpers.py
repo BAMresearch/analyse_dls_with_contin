@@ -288,6 +288,27 @@ def convertAPKWentries(data):
     data['countrate'].index = np.linspace(0.1, 0.1*data['countrate'][data['Angle [°]']].size,
                                           data['countrate'][data['Angle [°]']].size)
     data['attenuation'] = pd.DataFrame({data['Angle [°]']: (data['Attenuation'],)})
+    # extract data of the cumulant fit
+    rr = data['RecentRun']
+    data['cumulantfit'] = pd.DataFrame(zip(rr['CorrelationFitFunction'], rr['G2Residuals']),
+                                       columns=('CorrelationFitFunction','G2Residuals'),
+                                       index=rr['CumulantDelayTimes'])
+    data['cumulantfit']['CorrelationFitFunction'] -= 1.
+    data['cumulantfit'].index.names = ["tau"]
+    # remove obsolete, duplicate data
+    del data['RecentRun']['CorrelationFitFunction']
+    del data['RecentRun']['G2Residuals']
+    del data['RecentRun']['CumulantDelayTimes']
+    # extract reconstructed distribution
+    data['distribution'] = pd.DataFrame(zip(rr['ReconstructionIntensityDistribution'], rr['ReconstructionVolumeDistribution'], rr['ReconstructionNumberDistribution']),
+                                       columns=('intensity', 'volume', 'number'),
+                                       index=rr['ReconstructionRadiusNodes'])
+    data['distribution'].index.names = ["radius"]
+    # remove obsolete, duplicate data
+    del data['RecentRun']['ReconstructionIntensityDistribution']
+    del data['RecentRun']['ReconstructionVolumeDistribution']
+    del data['RecentRun']['ReconstructionNumberDistribution']
+    del data['RecentRun']['ReconstructionRadiusNodes']
     return data
 
 def readDLSDataAPKW(filename):
