@@ -278,6 +278,7 @@ def convertAPKWentries(data):
     data['correlation'].index *= 1e3
     data['correlation'].index.names = ["tau"]
     data['countrate'] = pd.DataFrame(data['RawData'][0]['IntensityTrace'], columns=data['angles'])
+    del data['RawData'] # not needed anymore, duplicate data
     data['Duration [s]'] = data['InputParameter']['MeasurementTime']
     data['countrate'].index = np.linspace(0, data['Duration [s]'], data['countrate'][175].size)
     data['attenuation'] = pd.DataFrame({data['Angle [°]']: (data['Attenuation'],)})
