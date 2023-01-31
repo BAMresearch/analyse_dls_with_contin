@@ -263,8 +263,11 @@ def convertAPKWentries(data):
     # use the ref. index value of the solvent
     data['Refractive Index'] = data['InputParameter']['Solvent']['RefractiveIndex']
     if data['Refractive Index'] == 0.:
-        # if the ref. index of the solvent is not set for some reason, use that of the material
-        data['Refractive Index'] = data['InputParameter']['Material']['RefractiveIndex']
+        # find the ref. index in look-up table if not set
+        data['Refractive Index'] = [entry['Value']
+             for entry in data['InputParameter']['Solvent']['RefractiveIndices']
+             if     entry['Key']['Temperature'] == data['InputParameter']['Solvent']['Temperature']
+                and entry['Key']['Wavelength'] == data['InputParameter']['Solvent']['Wavelength']][0]
     data['Wavelength [nm]'] = data['InputParameter']['Solvent']['Wavelength']*1e9
     data['Temperature [K]'] = data['InputParameter']['Solvent']['Temperature']
     data['Viscosity [cp]'] = data['InputParameter']['Solvent']['Viscosity']*1e3
