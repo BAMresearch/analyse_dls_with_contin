@@ -1,0 +1,55 @@
+[project]
+name = "analyse_dls_with_contin"
+dynamic = ["version", "description"]
+authors = [{name = "Ingo Bressler", email = "dev@ingobressler.net"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Topic :: Scientific/Engineering :: Chemistry",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "License :: OSI Approved :: MIT License",
+]
+requires-python = "~=3.7"
+dependencies = [
+  "requests",
+  "dateutil"
+]
+
+[project.optional-dependencies]
+testing = [
+  "pytest",
+  "pytest_notebook",
+]
+
+[build-system]
+requires = [
+    "setuptools>=40.6",
+    "wheel",
+]
+# check-manifest checks that, https://github.com/mgedmin/check-manifest/commit/c9df78
+build-backend = "setuptools.build_meta"
+
+# on version numbers: https://peps.python.org/pep-0440/
+# and bottom of https://softwareengineering.stackexchange.com/a/151558
+[tool.semantic_release]
+#major_on_zero = false # no major release when current major version is zero
+version_variable = [                        # version location
+    '__init__.py:__version__',
+]
+version_source = "tag"
+prerelease_tag = "dev"
+branch = "main"
+upload_to_release = false                   # auto-create GitHub release
+upload_to_pypi = false                      # don't auto-upload to PyPI
+
