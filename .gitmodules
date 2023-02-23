@@ -1,3 +1,0 @@
-[submodule "jupyter_analysis_tools"]
-	path = jupyter_analysis_tools
-	url = https://github.com/BAMresearch/jupyter_analysis_tools.git
