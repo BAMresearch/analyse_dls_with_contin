@@ -133,7 +133,7 @@ def readDLSDataASC(filename, showProgress=False, encoding='cp1250',
         attenManual = getAttenuationFromMemo(data['memo'], len(angles), **attenKeys)
         if atten != attenManual:
             warn("\n"f"  Attenuation values specified in sample description: {attenManual}\n"
-                 f"  ('{memostr}'),\n"
+                 f"  ('{data['memo']}'),\n"
                  f"  differ from the values stored by software:          {atten}!\n"
                  f"  -> Using values from sample description:            {attenManual}.", # 'cause they may contain 4 instead of 3 values
                  None, stacklevel=2)
