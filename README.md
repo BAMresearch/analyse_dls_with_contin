@@ -9,6 +9,16 @@ on every DLS measurement (dynamic light scattering, aka. photon correlation spec
 read from `*.ASC` files at the specified angle found in the given subfolders.
 The expected input file format is `ALV-7004 CGS-8F Data` which is found at the first line of each file.
 
+## Requirements
+
+Packages that are used here and which might be missing the a clean default python installation or *venv*:
+
+- pandas
+- jupyter
+- bson
+- matplotlib
+- scipy
+
 ### Online Documentation
 
 https://bamresearch.github.io/analyse_dls_with_contin
