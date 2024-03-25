@@ -15,15 +15,15 @@ import sys
 cwd = Path().resolve()
 if cwd not in sys.path:
     sys.path.insert(0, str(cwd))
-from jupyter_analysis_tools.utils import isWindows, isMac, isList, pushd, grouper, updatedDict
+from jupyter_analysis_tools.utils import (isWindows, isMac, isLinux,
+    isList, pushd, grouper, updatedDict)
 from jupyter_analysis_tools.analysis import getModZScore
 from dlshelpers import getDLSgammaSi, readDLSData
 
 InputFn = "contin_in.txt"
 OutputFn = "contin_out.txt"
 
-def getContinForWindows(targetPath):
-    binaryName = "contin-windows.exe"
+def getContinOnline(targetPath, binaryName):
     baseurl="http://www.s-provencher.com"
     html_page = urllib.request.urlopen(baseurl+"/contin.shtml").read()
     soup = BeautifulSoup(html_page)
@@ -36,18 +36,25 @@ def getContinForWindows(targetPath):
 def getContinPath():
     if isMac():
         # get local path to the CONTIN executable
-        return Path.home() / "code" / "cntb2" / "bin" / "contin OSX"
+        continCmd = Path.home() / "code" / "cntb2" / "bin" / "contin OSX"
     elif isWindows():
         continCmd = Path(os.getenv('APPDATA')) / "contin" / "contin.exe"
-        #print(continCmd)
         if continCmd.is_file():
             return continCmd
         continCmd.parent.mkdir(parents=True, exist_ok=True)
-        getContinForWindows(continCmd)
+        getContinOnline(continCmd, "contin-windows.exe")
+    elif isLinux():
+        continCmd = Path.home() / ".local" / "bin" / "contin"
         if continCmd.is_file():
-            print(f"Installed CONTIN at '{continCmd}'.")
-        else:
-            print("Failed to retrieve CONTIN executable!")
+            return continCmd
+        continCmd.parent.mkdir(parents=True, exist_ok=True)
+        getContinOnline(continCmd, "contin-linux")
+        if continCmd.is_file():
+            continCmd.chmod(0o755) # make it executable
+    if continCmd.is_file():
+        print(f"Installed CONTIN at '{continCmd}'.")
+        return continCmd
+    print(f"Failed to find CONTIN at '{continCmd}'!")
     raise NotImplementedError("Don't know how to retrieve the CONTIN executable!")
 
 def genContinInput(filedata, **continConfig):
