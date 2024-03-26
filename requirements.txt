@@ -1,0 +1,6 @@
+jupyter-analysis-tools
+pandas
+jupyter
+bson
+matplotlib
+scipy

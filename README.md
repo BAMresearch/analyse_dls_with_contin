@@ -11,13 +11,15 @@ The expected input file format is `ALV-7004 CGS-8F Data` which is found at the f
 
 ## Requirements
 
-Packages that are used here and which might be missing the a clean default python installation or *venv*:
+For packages that are used here and which might be missing the a clean default python installation or *venv*,
+please see the [requirements](requirements.txt) file. Install the listed packages by running:
 
-- pandas
-- jupyter
-- bson
-- matplotlib
-- scipy
+    pip install -r requirements.txt
+
+## Problems & Help
+
+If there are any errors with the code, please look for existing similar reports and possible solutions
+or open [a **new issue** on the project page](https://github.com/BAMresearch/analyse_dls_with_contin/issues).
 
 ### Online Documentation
 
