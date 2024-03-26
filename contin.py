@@ -224,6 +224,9 @@ def runContinOverFiles(fnLst, configLst, nthreads=None, outputCallback=None):
            with new output messages combined from all CONTIN processes.
     """
     start = time.time()
+    # make sure the contin cmd exists, avoids downloading/installing it from parallel threads later
+    continCmd = getContinPath()
+    assert continCmd.is_file(), "CONTIN executable not found!"
     if not isList(configLst):
         configLst = (configLst,)
     dataLst = readData(fnLst, configLst)
