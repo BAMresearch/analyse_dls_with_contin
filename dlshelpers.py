@@ -129,7 +129,7 @@ def readDLSDataASC(filename, showProgress=False, encoding='cp1250',
     # parse attenuation values
     atten = [value for key,value in data.items() if key.startswith("Atten")]
     atten += [1.0] * (len(angles) - len(atten)) # pad attenuation list to have same amount as angles (only 3 stored in file)
-    if attenKeys['key'] in data['memo']:
+    if any([(key in data['memo'].lower()) for key in (attenKeys['key'], attenKeys['detectorKey'])]):
         attenManual = getAttenuationFromMemo(data['memo'], len(angles), **attenKeys)
         if atten != attenManual:
             warn("\n"f"  Attenuation values specified in sample description: {attenManual}\n"
