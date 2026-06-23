@@ -235,7 +235,7 @@ def getAttenuationFromMemo(memo, count=4, detectorKey='detektor', levelKey='stuf
     def getnumbers(text, idxoffset=0):
         return ([(int(idx)+idxoffset, int(inner)/100 if len(inner) else 1.)
                 for idx, _, inner in re.findall(r"\b(\d)\b(\((\d+)%\))?", text)])
-    atten, detector = list(np.ones(count)), ()
+    atten, detector = [1.0] * count, ()
     for field in memo.split(','):
         field = field.strip().lower()
         #print(f"-> field '{field}':")
@@ -249,7 +249,7 @@ def getAttenuationFromMemo(memo, count=4, detectorKey='detektor', levelKey='stuf
             detector = [(d, transmissionLevels[d,level[d%len(level)][0]]) for d, _ in detector]
             #print(detector)
         for d, val in detector:
-            atten[d] = val
+            atten[d] = float(val)
     return atten
 
 def convertAPKWentries(data):
