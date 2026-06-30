@@ -1,0 +1,13 @@
+name: dls
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - pandas
+  - jupyter
+  - matplotlib
+  - scipy
+  - bson
+  - pip
+  - pip:
+      - jupyter-analysis-tools
