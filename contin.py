@@ -211,8 +211,8 @@ def calcZScore(dataLst, configLst):
             dataLst[i]['score'][angle] = score
     return dataLst
 
-def runContinOverFiles(fnLst, configLst, nthreads=None, outputCallback=None):
-    """*fnLst*: List of file paths to .ASC files
+def runContinOverFiles(dataLst, configLst, nthreads=None, outputCallback=None):
+    """*dataLst*: List of dicts retreived by readDLSData()
        *configLst*: List of parameters, one dict for each file, such as
             {'recalc': True, 'gridpts': 200, 'transformData': True,
              'ptRangeSec': (3e-07, 1.0), 'fitRangeM': (7e-10, 3.9e-07),
@@ -229,7 +229,6 @@ def runContinOverFiles(fnLst, configLst, nthreads=None, outputCallback=None):
     assert continCmd.is_file(), "CONTIN executable not found!"
     if not isList(configLst):
         configLst = (configLst,)
-    dataLst = readDLSData(fnLst)
     calcZScore(dataLst, configLst)
     # get all combinations of CONTIN parameters and data files
     dataNConfig = [(data, cfg) for data in dataLst for cfg in configLst]
