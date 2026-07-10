@@ -8,6 +8,7 @@ from dateutil.parser import parse as parseDateTime
 import zipfile
 import bson
 import pprint
+import json
 from uuid import UUID
 
 import numpy as np
@@ -311,7 +312,7 @@ def convertAPKWentries(data):
     del data['RecentRun']['ReconstructionRadiusNodes']
     return data
 
-def readDLSDataAPKW(filename):
+def readDLSDataAPKW(filename, dumpJson=False):
     """Yields none or more unique dicts, one for each measurement,
     stored in the given APKW file name."""
     #print(filename)
@@ -319,22 +320,25 @@ def readDLSDataAPKW(filename):
     if zipfile.is_zipfile(filename):
         with zipfile.ZipFile(filename, 'r') as zf:
             for zi in zf.infolist():
+                #print(zi)
                 if zi.filename.startswith('measurement'):
-                    #print(zi)
                     data = bson.loads(zf.read(zi))
-                    #pprint.pprint(data)
+                    if dumpJson:
+                        jsonfn = Path(zi.filename).with_suffix(".json").name
+                        with open(jsonfn, "w") as fd:
+                            json.dump(data, fd, indent=2, default=str)
                     if data['StorageStatus'] == 3 and data['UsedAngle'] > 0:
                         data['filename'] = filename / str(data['Id']) # remember it here
                         yield convertAPKWentries(data)
 
-def readDLSData(files, *args, **kwargs):
+def readDLSData(files, debugAPKW=False):
     """Read DLS measurements from provided files, *.ASC or *.apkw are supported."""
     if not isinstance(files, list) and not isinstance(files, tuple):
         files = (files,)
     # gather all measurement data from APKW files first
     dirData = list({datadict['Id']: datadict
                     for fn in files
-                    for datadict in readDLSDataAPKW(fn)}.values())
+                    for datadict in readDLSDataAPKW(fn, dumpJson=debugAPKW)}.values())
     # try to read ASC files
     if not len(dirData):
         dirData = [readDLSDataASC(fn) for fn in files]
