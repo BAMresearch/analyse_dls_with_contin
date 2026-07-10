@@ -28,3 +28,7 @@ https://bamresearch.github.io/analyse_dls_with_contin
 #### Documentation as PDF
 
 https://bamresearch.github.io/analyse_dls_with_contin/analyse-dls-with-contin.pdf
+
+## To Do
+
+- dlshelpers: make output units SI compliant; adjust ASC code reading as well
