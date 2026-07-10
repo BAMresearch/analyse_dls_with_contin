@@ -176,7 +176,7 @@ def runContin(filedata, continConfig, useQueue=True):
         if not continConfig.get("recalc", True):
             return tmpDir
         shutil.rmtree(tmpDir)
-    os.mkdir(tmpDir)
+    tmpDir.mkdir(parents=True, exist_ok=True)
     continInDataPath  = tmpDir / InputFn
     continOutDataPath = tmpDir / OutputFn
     # Store input data
@@ -364,7 +364,7 @@ def getContinResults(sampleDir, angle=None):
     # convert CONTIN output distrib to parseable data for pandas
     fixedFloatFmt = io.StringIO("\n".join([line[:lineEnd].replace("D", "E")
                                 for line in lines[dfStart:dfStart+gridSize]]))
-    dfDistrib = pd.read_csv(fixedFloatFmt, sep='\s+', names=("distrib", "err", "decay"))
+    dfDistrib = pd.read_csv(fixedFloatFmt, sep=r'\s+', names=("distrib", "err", "decay"))
     dfDistrib = dfDistrib[["decay", "distrib", "err"]] # reorder to (x,y,u)
     # update x/abscissa with values from another section of the output
     # to avoid duplicates due to low precision in solution output parsed above
