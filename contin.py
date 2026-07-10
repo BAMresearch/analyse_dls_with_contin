@@ -192,9 +192,9 @@ def runContin(filedata, continConfig, useQueue=True):
         fd.write(proc.stdout)
     return tmpDir
 
-def readData(fnLst, configLst):
+def calcZScore(dataLst, configLst):
+    """calculate and note a quality score for each countrate and angle"""
     angles = [cfg['angle'] for cfg in configLst]
-    dataLst = readDLSData(fnLst)
     # calc modified Z-Score based on median absolute deviation
     # for each count rate at the same angle
     for angle in set(angles):
@@ -229,7 +229,8 @@ def runContinOverFiles(fnLst, configLst, nthreads=None, outputCallback=None):
     assert continCmd.is_file(), "CONTIN executable not found!"
     if not isList(configLst):
         configLst = (configLst,)
-    dataLst = readData(fnLst, configLst)
+    dataLst = readDLSData(fnLst)
+    calcZScore(dataLst, configLst)
     # get all combinations of CONTIN parameters and data files
     dataNConfig = [(data, cfg) for data in dataLst for cfg in configLst]
     if nthreads == 1:
