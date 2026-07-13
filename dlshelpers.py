@@ -290,7 +290,7 @@ def convertAPKWentries(data):
     # in older formats it's RawData[0].CorrelationDelayTimes
     corrIndex = md.get('CorrelationDelayTimes', md['RawData'][0].get('CorrelationDelayTimes'))
     data['correlation'] = pd.DataFrame(correlation, index=corrIndex, columns=data['angles'])
-    samplingRate = md['RawData'][0].get('SamplingRate', 10.)  # default to 10 Hz if not set (AntonPaar.Calliope 2.24, 2022)
+    samplingRate = md['RawData'][0].get('SamplingRate', data.get('DetectorSampleRate'))  # default to 10 Hz if not set (AntonPaar.Calliope 2.24, 2022)
     countrate = np.hstack(tuple(run['IntensityTrace'] for run in md['RawData'][:3]))
     countrateIndex = np.linspace(1/samplingRate, 1/samplingRate*len(countrate), len(countrate))
     data['countrate'] = pd.DataFrame(countrate, index=countrateIndex, columns=data['angles']) * samplingRate
