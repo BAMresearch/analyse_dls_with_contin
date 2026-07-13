@@ -155,7 +155,9 @@ def runContin(filedata, continConfig, useQueue=True):
     (which should contain a single angle only)."""
     continCmd = getContinPath()
     assert continCmd.is_file(), "CONTIN executable not found!"
-    logPrefix = f"{filedata['filename'].name}@{continConfig['angle']}°: "
+    fieldsep = ","
+    dataid = filedata['Samplename'] + fieldsep + filedata['filename'].stem[:13]
+    logPrefix = f"{dataid}@{continConfig['angle']}°: "
     workDir = filedata['filename'].parent
     if workDir.is_file():
         logPrefix = workDir.stem + '/' + logPrefix
@@ -171,7 +173,7 @@ def runContin(filedata, continConfig, useQueue=True):
             f"Skipping…")
         return
     #ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S") # timestamp
-    tmpDir = workDir / (getContinOutputDirname(continConfig['angle'])+' '+filedata['filename'].stem)
+    tmpDir = workDir / (getContinOutputDirname(continConfig['angle']) + fieldsep + dataid)
     if tmpDir.is_dir(): # deleting old results
         if not continConfig.get("recalc", True):
             return tmpDir
