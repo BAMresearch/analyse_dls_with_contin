@@ -272,22 +272,37 @@ def convertAPKWentries(data):
     data['Wavelength [nm]'] = data['InputParameter']['Solvent']['Wavelength']*1e9
     data['Temperature [K]'] = data['InputParameter']['Solvent']['Temperature']
     data['Viscosity [cp]'] = data['InputParameter']['Solvent']['Viscosity']*1e3
-    if data['MetaInfo']['InstrumentType'] == 'Litesizer 100':
+    if data['MetaInfo']['InstrumentType'].strip() in ('Litesizer DLS 500', 'Litesizer 100'):
         data['Angle [°]'] = 175.
         data['angles'] = [data['Angle [°]']]
-    data['correlation'] = pd.DataFrame(data['RawData'][0]['CorrelationDataScaled'],
-                                       columns=data['angles'],
-                                       index=data['RawData'][0]['CorrelationDelayTimes'],)
+    # in newer file formats there is a 'MeasurementData' sub-dict, in older formats RawData is in the root dict
+    md = data.get('MeasurementData', data)
+    #print(f"{md=}")
+    correlation, countrate, samplingRate = dict(), dict(), None
+    # TODO: indexing question: What to do with multiple measurements for multiple angles?
+    if False:
+        for i, run in enumerate(md['RawData']):
+            samplingRate = run['SamplingRate']
+            correlation[f"run_{i}"] = run['CorrelationDataScaled']
+            countrate[f"run_{i}"] = run['IntensityTrace']
+    correlation = np.array(tuple(run['CorrelationDataScaled'] for run in md['RawData'][:3])).mean(axis=0)
+    # in newer file formats it's MeasurementData.CorrelationDelayTimes
+    # in older formats it's RawData[0].CorrelationDelayTimes
+    corrIndex = md.get('CorrelationDelayTimes', md['RawData'][0].get('CorrelationDelayTimes'))
+    data['correlation'] = pd.DataFrame(correlation, index=corrIndex, columns=data['angles'])
+    samplingRate = md['RawData'][0].get('SamplingRate', 10.)  # default to 10 Hz if not set (AntonPaar.Calliope 2.24, 2022)
+    countrate = np.hstack(tuple(run['IntensityTrace'] for run in md['RawData'][:3]))
+    countrateIndex = np.linspace(1/samplingRate, 1/samplingRate*len(countrate), len(countrate))
+    data['countrate'] = pd.DataFrame(countrate, index=countrateIndex, columns=data['angles']) * samplingRate
+    data['countrate'].index.names = ["t"]
     data['correlation'] -= 1.
     data['correlation'].index *= 1e3
     data['correlation'].index.names = ["tau"]
-    data['countrate'] = pd.DataFrame(data['RawData'][0]['IntensityTrace'], columns=data['angles'])
-    data['countrate'] *= 10. # converted to match the exported XLS sheet data
-    del data['RawData'] # remove obsolete, duplicate data
+    del data['RawData']  # remove obsolete, duplicate data
+    if 'MeasurementData' in data:
+        del data['MeasurementData']  # remove obsolete, duplicate data
+
     data['Duration [s]'] = data['InputParameter']['MeasurementTime']
-    # hardcoded count rate reading times? nowhere stored in file
-    data['countrate'].index = np.linspace(0.1, 0.1*data['countrate'][data['Angle [°]']].size,
-                                          data['countrate'][data['Angle [°]']].size)
     data['attenuation'] = pd.DataFrame({data['Angle [°]']: (data['Attenuation'],)})
     # extract data of the cumulant fit
     rr = data['RecentRun']
@@ -296,7 +311,7 @@ def convertAPKWentries(data):
                                        index=rr['CumulantDelayTimes'])
     data['cumulantfit']['CorrelationFitFunction'] -= 1.
     data['cumulantfit'].index.names = ["tau"]
-    # remove obsolete, duplicate data
+    # remove obsolete, now duplicate data
     del data['RecentRun']['CorrelationFitFunction']
     del data['RecentRun']['G2Residuals']
     del data['RecentRun']['CumulantDelayTimes']
@@ -305,11 +320,14 @@ def convertAPKWentries(data):
                                        columns=('intensity', 'volume', 'number'),
                                        index=rr['ReconstructionRadiusNodes'])
     data['distribution'].index.names = ["radius"]
-    # remove obsolete, duplicate data
+    # remove obsolete, now duplicate data
     del data['RecentRun']['ReconstructionIntensityDistribution']
     del data['RecentRun']['ReconstructionVolumeDistribution']
     del data['RecentRun']['ReconstructionNumberDistribution']
     del data['RecentRun']['ReconstructionRadiusNodes']
+    # remove proprietary data fields that contain no relevant information
+    if 'VelocityCorrectionInfo' in data['InputParameter']['Material']:
+        del data['InputParameter']['Material']['VelocityCorrectionInfo']
     return data
 
 def readDLSDataAPKW(filename, dumpJson=False):
