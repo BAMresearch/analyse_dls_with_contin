@@ -342,7 +342,7 @@ def readDLSDataAPKW(filename, dumpJson=False):
                 if zi.filename.startswith('measurement'):
                     data = bson.loads(zf.read(zi))
                     if dumpJson:
-                        jsonfn = Path(zi.filename).with_suffix(".json").name
+                        jsonfn = Path(str(data['Id'])).with_suffix(".json").name
                         with open(jsonfn, "w") as fd:
                             json.dump(data, fd, indent=2, default=str)
                     if data['StorageStatus'] == 3 and data['UsedAngle'] > 0:
