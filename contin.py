@@ -26,7 +26,7 @@ OutputFn = "contin_out.txt"
 def getContinOnline(targetPath, binaryName):
     baseurl="http://www.s-provencher.com"
     html_page = urllib.request.urlopen(baseurl+"/contin.shtml").read()
-    soup = BeautifulSoup(html_page)
+    soup = BeautifulSoup(html_page, features="html.parser")
     binurl = [link.get('href') for link in soup.findAll('a') if link.text.strip() == binaryName]
     binurl = '/'.join((baseurl,binurl[0]))
     binary = requests.get(binurl, allow_redirects=True)
