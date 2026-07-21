@@ -273,7 +273,7 @@ def convertAPKWentries(data):
     data['Temperature [K]'] = data['InputParameter']['Solvent']['Temperature']
     data['Viscosity [cp]'] = data['InputParameter']['Solvent']['Viscosity']*1e3
     if data['MetaInfo']['InstrumentType'].strip() in ('Litesizer DLS 500', 'Litesizer 100'):
-        data['Angle [°]'] = 175.
+        data['Angle [°]'] = {1: 175., 2: 15., 3: 90.}.get(data["UsedAngle"])
         data['angles'] = [data['Angle [°]']]
     # in newer file formats there is a 'MeasurementData' sub-dict, in older formats RawData is in the root dict
     md = data.get('MeasurementData', data)
